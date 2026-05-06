@@ -7,8 +7,7 @@
 #
 # Run from the repo root on each agent host:
 #     cp .env.agent.example .env.agent   # edit secrets
-#     docker compose -f docker-compose.agent.yml --env-file .env.agent \
-#         up -d --build
+#     docker compose -f docker-compose.agent.yml up -d --build
 #
 # Required env vars (see .env.agent.example for the full list):
 #   AGENT_API_KEY        — shared secret the master will use to call us.
@@ -22,24 +21,15 @@ services:
       dockerfile: agent/Dockerfile
     ports:
       - "8010:8000"
-    environment:
-      AGENT_API_KEY: ${AGENT_API_KEY}
-      AGENT_PROVIDER_TYPE: ${AGENT_PROVIDER_TYPE:-wireguard}
-      AGENT_MARZBAN_URL: ${AGENT_MARZBAN_URL:-}
-      AGENT_MARZBAN_USERNAME: ${AGENT_MARZBAN_USERNAME:-}
-      AGENT_MARZBAN_PASSWORD: ${AGENT_MARZBAN_PASSWORD:-}
-      # Used by registration scripts / self-bootstrap, not the agent
-      # process itself. Forwarded for parity with the install.sh flow.
-      KOSATKA_MASTER_URL: ${KOSATKA_MASTER_URL}
-      KOSATKA_API_KEY: ${KOSATKA_API_KEY}
+    # ``env_file`` populates the container's environment from
+    # .env.agent if present. Operator-supplied values (AGENT_API_KEY,
+    # AGENT_PROVIDER_TYPE, KOSATKA_MASTER_URL, etc.) come from there —
+    # see .env.agent.example for the full list.
+    env_file:
+      - .env.agent
     volumes:
       # Persist provider state (peer lists, server keys) across restarts.
       - agent_state:/opt/kosatka/agent
-    # Same auto-load mechanism as the master compose file — see comment
-    # in docker-compose.master.yml.
-    env_file:
-      - path: .env.agent
-        required: false
     restart: always
 
 volumes:

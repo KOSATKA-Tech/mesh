@@ -78,8 +78,7 @@ $EDITOR .env.master   # set KOSATKA_API_KEY etc.
 # hardcoded inside the compose file (this is an internal control-plane
 # DB, not exposed to the host network), so operators only need to
 # supply application-level settings from .env.master.
-docker compose -f docker-compose.master.yml --env-file .env.master \
-    up -d --build
+docker compose -f docker-compose.master.yml up -d --build
 ```
 
 The master listens on `:8000`. Verify with:
@@ -97,8 +96,7 @@ cd mesh
 cp .env.agent.example .env.agent
 $EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, KOSATKA_API_KEY
 
-docker compose -f docker-compose.agent.yml --env-file .env.agent \
-    up -d --build
+docker compose -f docker-compose.agent.yml up -d --build
 ```
 
 The agent listens on `:8010`. Then, from any host that can reach both:

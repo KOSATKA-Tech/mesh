@@ -10,8 +10,7 @@
 #
 # Run from the repo root:
 #     cp .env.master.example .env.master   # edit secrets
-#     docker compose -f docker-compose.master.yml --env-file .env.master \
-#         up -d --build
+#     docker compose -f docker-compose.master.yml up -d --build
 services:
   postgres:
     image: postgres:16-alpine
@@ -40,27 +39,19 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
-    environment:
-      # DATABASE_URL is pinned to the colocated Postgres container so
-      # the master never accidentally falls back to its sqlite default
-      # in production.
-      KOSATKA_DATABASE_URL: postgresql+asyncpg://kosatka:kosatka@postgres:5432/kosatka
-      # Everything else is operator-supplied — same surface as
-      # .env.example. Compose forwards these from the host environment
-      # / .env file automatically when listed without a value.
-      KOSATKA_API_KEY: ${KOSATKA_API_KEY}
-      KOSATKA_AGENT_API_KEY: ${KOSATKA_AGENT_API_KEY:-}
-      KOSATKA_WEBHOOK_SECRET: ${KOSATKA_WEBHOOK_SECRET:-default-webhook-secret}
-      KOSATKA_SYNC_INTERVAL: ${KOSATKA_SYNC_INTERVAL:-60}
-      KOSATKA_EXPIRATION_CHECK_INTERVAL: ${KOSATKA_EXPIRATION_CHECK_INTERVAL:-300}
-    # ``env_file`` makes the master service load .env.master automatically
-    # when the operator runs the compose command WITHOUT --env-file. The
-    # explicit --env-file flag in the docs above is still recommended
-    # because it also expands ${...} substitutions in this file from the
-    # same source.
+    # ``env_file`` populates the container's environment from
+    # .env.master if present. Operator-supplied values (KOSATKA_API_KEY,
+    # KOSATKA_WEBHOOK_SECRET, etc.) come from there — see
+    # .env.master.example for the full list.
     env_file:
-      - path: .env.master
-        required: false
+      - .env.master
+    environment:
+      # ``environment`` is applied AFTER ``env_file``, so this entry
+      # forcibly pins DATABASE_URL to the colocated Postgres container
+      # regardless of what the operator scribbled in .env.master. This
+      # prevents the master from accidentally falling back to its
+      # sqlite default inside Docker.
+      KOSATKA_DATABASE_URL: postgresql+asyncpg://kosatka:kosatka@postgres:5432/kosatka
     restart: always
 
 volumes:

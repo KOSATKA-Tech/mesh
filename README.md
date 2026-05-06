@@ -26,8 +26,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/kosatka-org/kosatka-mesh.git
-cd kosatka-mesh
+git clone https://github.com/6dba/mesh.git
+cd mesh
 
 # Install in editable mode (installs master, agent, sdk, and cli)
 uv pip install -e .

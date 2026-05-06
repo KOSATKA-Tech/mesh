@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     # policies. Common picks for a Russian-speaking deployment:
     # ``category-ru-blocked``, ``geolocation-!ru``, ``category-ads-all``.
     geosite_default_tags: list[str] = []
+    # Phase 1b: how often the master polls every active client's agent
+    # for the WG handshake endpoint IP and resolves it via GeoIP.
+    # 5 min is plenty — peer endpoint IPs change at the tempo of
+    # mobile networks, not seconds. ``0`` disables the job.
+    region_tracker_interval: int = 300
 
     def effective_agent_api_key(self) -> str:
         return self.agent_api_key or self.api_key

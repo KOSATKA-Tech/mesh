@@ -4,7 +4,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from .config import settings
 from .database import SessionLocal
-from .services import geosite_importer
+from .services import geosite_importer, region_tracker
 from .services.node_manager import NodeManager
 from .services.subscription_engine import SubscriptionEngine
 
@@ -48,4 +48,19 @@ def setup_scheduler():
             "interval",
             seconds=settings.geosite_refresh_interval,
         )
+    if settings.region_tracker_interval > 0:
+        scheduler.add_job(
+            region_tracker_job,
+            "interval",
+            seconds=settings.region_tracker_interval,
+        )
     scheduler.start()
+
+
+async def region_tracker_job():
+    """GeoIP-on-handshake refresh; never raises."""
+    async with SessionLocal() as db:
+        try:
+            await region_tracker.refresh_client_regions(db)
+        except Exception:  # noqa: BLE001 — scheduler must never escape here
+            logger.exception("Scheduled region tracker pass failed")

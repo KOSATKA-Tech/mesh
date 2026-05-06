@@ -126,16 +126,16 @@ class AmneziaWGProvider(BaseAgentProvider):
         if peer is None:
             return {"transfer_rx": 0, "transfer_tx": 0}
         try:
-            # Format: <pubkey>\t<psk>\t<endpoint>\t<allowed-ips>\t<latest-handshake>\t<rx>\t<tx>\t<keepalive>
+            # See ``parse_wg_dump`` for the field layout.
             dump = await wg.run([CMD, "show", self.interface, "dump"])
         except RuntimeError:
             return {"transfer_rx": 0, "transfer_tx": 0}
-        for line in dump.splitlines():
-            parts = line.split("\t")
-            if len(parts) >= 7 and parts[0] == peer.public_key:
+        for stats in wg.parse_wg_dump(dump):
+            if stats.public_key == peer.public_key:
                 return {
-                    "transfer_rx": int(parts[5]),
-                    "transfer_tx": int(parts[6]),
-                    "latest_handshake": int(parts[4]) if parts[4] else 0,
+                    "transfer_rx": stats.transfer_rx,
+                    "transfer_tx": stats.transfer_tx,
+                    "latest_handshake": stats.latest_handshake,
+                    "endpoint_ip": stats.endpoint_ip,
                 }
         return {"transfer_rx": 0, "transfer_tx": 0}

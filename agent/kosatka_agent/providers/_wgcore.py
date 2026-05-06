@@ -55,6 +55,72 @@ class PeerState:
     peers: Dict[str, Peer] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class PeerStats:
+    """One peer's row in ``wg show <iface> dump``.
+
+    Format (tab-separated): ``<pubkey>\\t<psk>\\t<endpoint>\\t<allowed-ips>
+    \\t<latest-handshake>\\t<rx>\\t<tx>\\t<keepalive>``. The very first row
+    of the dump describes the *interface* (server) — its layout is
+    different and the parser skips any row that doesn't have an
+    endpoint shaped like ``host:port``.
+    """
+
+    public_key: str
+    endpoint: str  # ``host:port`` or ``"(none)"`` if no recent handshake
+    latest_handshake: int
+    transfer_rx: int
+    transfer_tx: int
+
+    @property
+    def endpoint_ip(self) -> str | None:
+        """Strip the ``:port`` suffix; ``None`` if no endpoint is set yet.
+
+        Both IPv4 (``1.2.3.4:51820``) and IPv6 (``[2001:db8::1]:51820``)
+        formats are normalised here so callers downstream never need to
+        know the difference. ``"(none)"`` is what ``wg`` prints before
+        the first handshake — we treat it as "no usable endpoint".
+        """
+        if not self.endpoint or self.endpoint == "(none)":
+            return None
+        if self.endpoint.startswith("["):
+            # IPv6 with bracketed host: ``[<v6>]:<port>``
+            close = self.endpoint.find("]")
+            return self.endpoint[1:close] if close > 0 else None
+        host, _, _ = self.endpoint.rpartition(":")
+        return host or None
+
+
+def parse_wg_dump(dump: str) -> List[PeerStats]:
+    """Parse ``wg show <iface> dump`` into a list of per-peer stats.
+
+    The first dump line describes the interface itself (private key /
+    public key / listen-port / fwmark) and only has 4 fields, so we
+    filter to rows with at least the 8 peer fields and a public key
+    that looks like a base64 wg pubkey.
+    """
+    out: List[PeerStats] = []
+    for line in dump.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 8:
+            continue
+        try:
+            out.append(
+                PeerStats(
+                    public_key=parts[0],
+                    endpoint=parts[2],
+                    latest_handshake=int(parts[4]) if parts[4] else 0,
+                    transfer_rx=int(parts[5]),
+                    transfer_tx=int(parts[6]),
+                )
+            )
+        except ValueError:
+            # Defensive: a future ``wg`` could change the field order.
+            # Skip the row rather than crash get_client_stats.
+            continue
+    return out
+
+
 async def run(cmd: List[str], stdin_text: str | None = None) -> str:
     """Run a subprocess; return stdout on success, raise on failure."""
     proc = await asyncio.create_subprocess_exec(

@@ -95,7 +95,15 @@ if [ -z "$MASTER_URL" ]; then
 fi
 
 echo "--- Downloading Playbooks from $MASTER_URL ---"
-curl -sL "${MASTER_URL}/api/v1/static/ansible.tar.gz" -o ansible.tar.gz
+# The ansible.tar.gz endpoint is now authenticated (same X-Kosatka-Key
+# header as the rest of /api/v1/*). --fail makes curl exit non-zero on
+# 4xx/5xx so a bad token surfaces immediately instead of writing an
+# error page to disk and tripping `tar -xzf` with a confusing
+# "stdin: not in gzip format" later.
+curl -sSL --fail \
+    -H "X-Kosatka-Key: ${TOKEN}" \
+    "${MASTER_URL}/api/v1/static/ansible.tar.gz" \
+    -o ansible.tar.gz
 tar -xzf ansible.tar.gz
 
 # Run Ansible.

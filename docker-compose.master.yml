@@ -1,0 +1,64 @@
+# KOSATKA Mesh — Master compose file.
+#
+# Brings up the master API together with a dedicated Postgres 16
+# container. Postgres credentials are deliberately hardcoded (this is a
+# single-deployment internal database, not a shared service) so a fresh
+# `docker compose -f docker-compose.master.yml up -d` works with no
+# extra configuration. Master-facing settings (``KOSATKA_API_KEY``,
+# ``KOSATKA_WEBHOOK_SECRET``, etc.) are still read from the environment
+# / .env file as documented in .env.example.
+#
+# Run from the repo root:
+#     cp .env.master.example .env.master   # edit secrets
+#     docker compose -f docker-compose.master.yml up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      # Hardcoded — see file header. Override only if you know what
+      # you're doing; the master service below targets these exact
+      # values in its DATABASE_URL.
+      POSTGRES_USER: kosatka
+      POSTGRES_PASSWORD: kosatka
+      POSTGRES_DB: kosatka
+    # Expose Postgres on host port 5433 (not the default 5432) so the
+    # control-plane DB doesn't collide with any other Postgres the host
+    # might already be running. Inside the compose network the master
+    # service still talks to ``postgres:5432`` directly.
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kosatka -d kosatka"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  master:
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # ``env_file`` populates the container's environment from
+    # .env.master if present. Operator-supplied values (KOSATKA_API_KEY,
+    # KOSATKA_WEBHOOK_SECRET, etc.) come from there — see
+    # .env.master.example for the full list.
+    env_file:
+      - .env.master
+    environment:
+      # ``environment`` is applied AFTER ``env_file``, so this entry
+      # forcibly pins DATABASE_URL to the colocated Postgres container
+      # regardless of what the operator scribbled in .env.master. This
+      # prevents the master from accidentally falling back to its
+      # sqlite default inside Docker.
+      KOSATKA_DATABASE_URL: postgresql+asyncpg://kosatka:kosatka@postgres:5432/kosatka
+    restart: always
+
+volumes:
+  postgres_data:

@@ -4,7 +4,7 @@ import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -12,6 +12,7 @@ from sqlalchemy import text
 from .api.v1.router import api_router
 from .database import Base, engine
 from .scheduler import scheduler, setup_scheduler
+from .security import get_api_key
 
 # Columns added to existing tables by recent feature work. `create_all`
 # only creates missing tables — it cannot `ALTER TABLE … ADD COLUMN` on
@@ -24,15 +25,29 @@ _LIGHTWEIGHT_MIGRATIONS: list[tuple[str, str, str]] = [
 
 
 async def _apply_lightweight_migrations() -> None:
-    """Add columns that were introduced after the first deployment."""
+    """Add columns that were introduced after the first deployment.
+
+    Supports both SQLite (``PRAGMA table_info``) and Postgres
+    (``information_schema``) so the same code path works for the new
+    ``docker-compose.master.yml`` Postgres deployment and for local
+    ``sqlite+aiosqlite`` development.
+    """
+    dialect = engine.dialect.name  # 'sqlite' | 'postgresql' | ...
     async with engine.begin() as conn:
         for table, column, sql_type in _LIGHTWEIGHT_MIGRATIONS:
-            # SQLite's `PRAGMA table_info` is the portable-enough way to
-            # detect an existing column for an MVP; every other backend
-            # we might swap in (Postgres) supports it via
-            # information_schema, but we only deploy on SQLite today.
-            result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
-            existing_columns = {row[1] for row in result.fetchall()}
+            if dialect == "sqlite":
+                result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
+                existing_columns = {row[1] for row in result.fetchall()}
+            else:
+                # Scope the lookup to the ``public`` schema so we don't
+                # falsely "find" the column on a same-named table living
+                # in pg_catalog / information_schema / a user schema and
+                # silently skip the migration on the real ``public.<table>``.
+                result = await conn.exec_driver_sql(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_schema = 'public' AND table_name = '{table}'"
+                )
+                existing_columns = {row[0] for row in result.fetchall()}
             if column not in existing_columns:
                 await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
 
@@ -90,8 +105,18 @@ def _resolve_ansible_dir() -> Path:
 
 
 @app.get("/api/v1/static/ansible.tar.gz")
-async def download_ansible_playbooks(background_tasks: BackgroundTasks):
-    """Pack the ansible directory and serve it as a tarball."""
+async def download_ansible_playbooks(
+    background_tasks: BackgroundTasks,
+    _: str = Depends(get_api_key),
+):
+    """Pack the ansible directory and serve it as a tarball.
+
+    Requires the same ``X-Kosatka-Key`` header as the rest of ``/api/v1/*``.
+    The ansible tree contains the agent self-bootstrap playbooks and
+    must not be downloadable by anonymous clients on the public internet.
+    ``install.sh`` forwards the operator's ``--token`` value as the
+    header so the existing bootstrap flow keeps working.
+    """
     ansible_dir = _resolve_ansible_dir()
 
     fd, temp_path = tempfile.mkstemp(suffix=".tar.gz")

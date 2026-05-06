@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -24,13 +25,29 @@ class NodeManager:
     async def sync_all_nodes(self):
         result = await self.db.execute(select(Node).where(Node.is_active.is_(True)))
         nodes = result.scalars().all()
+        if not nodes:
+            return
 
-        for node in nodes:
-            # Use node's own key or global fallback
+        # Probe every active node concurrently. The previous serial loop
+        # multiplied the worst-case sync latency by N \u2014 with default
+        # ``KOSATKA_SYNC_INTERVAL=60`` and a single dead node taking 5s
+        # to time out, ten nodes alone could blow past the next tick and
+        # starve the scheduler. ``return_exceptions=True`` keeps one
+        # misbehaving agent from short-circuiting the rest.
+        async def _probe(node: Node) -> bool:
             key = node.api_key or settings.effective_agent_api_key()
             provider = AgentNodeProvider(key)
-            is_up = await provider.sync_node(node.address)
+            return await provider.sync_node(node.address)
+
+        results = await asyncio.gather(
+            *(_probe(n) for n in nodes),
+            return_exceptions=True,
+        )
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        for node, outcome in zip(nodes, results):
+            is_up = outcome is True  # Exceptions / False both \u2192 offline.
             node.status = "online" if is_up else "offline"
-            node.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+            node.last_seen = now
 
         await self.db.commit()

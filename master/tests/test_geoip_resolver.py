@@ -78,6 +78,35 @@ async def test_resolve_caches_results():
 
 
 @pytest.mark.asyncio
+async def test_failed_lookup_uses_short_negative_ttl_not_24h():
+    """A transient 429 must not poison the cache for 24 hours."""
+    state = {"calls": 0, "fail": True}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        state["calls"] += 1
+        if state["fail"]:
+            return httpx.Response(429)
+        return httpx.Response(200, json=_success("RU", "MOW"))
+
+    # negative_ttl_seconds=0 ⇒ retry on the very next call.
+    resolver = GeoIPResolver(
+        http_client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        negative_ttl_seconds=0,
+    )
+    try:
+        first = await resolver.resolve_region("1.2.3.4")
+        assert first is None
+        # Upstream "recovers" — the resolver must retry, not return the
+        # cached None for the full positive TTL.
+        state["fail"] = False
+        second = await resolver.resolve_region("1.2.3.4")
+    finally:
+        await resolver.aclose()
+    assert second == "RU-MOW"
+    assert state["calls"] == 2
+
+
+@pytest.mark.asyncio
 async def test_resolve_swallows_http_errors():
     """A 429 / 5xx / network error must never propagate to the scheduler."""
 

@@ -150,6 +150,13 @@ async def refresh_client_regions(
             changed = await _upsert_region(db, client.external_id, region)
             if changed:
                 counts["updated"] += 1
+            else:
+                # ``_upsert_region`` returns False either because the
+                # row is locked by ``region_override=1`` or because
+                # the detected region equals the stored one. Counting
+                # both as ``skipped`` preserves ``seen == updated +
+                # skipped`` so the log line stays useful for ops.
+                counts["skipped"] += 1
         if counts["updated"]:
             await db.commit()
     finally:

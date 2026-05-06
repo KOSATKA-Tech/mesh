@@ -38,6 +38,11 @@ logger = logging.getLogger(__name__)
 _DEFAULT_ENDPOINT = "http://ip-api.com/json/{ip}?fields=status,country,countryCode,region"
 _DEFAULT_TIMEOUT = 5.0
 _DEFAULT_TTL_SECONDS = 24 * 60 * 60
+# Failed lookups (transient 429/5xx, JSON decode errors, ``status: fail``)
+# get a much shorter TTL so a single rate-limit hit doesn't poison
+# the cache for 24h. 60s lines up with the scheduler cadence — the
+# next tracker pass will retry naturally without hammering ip-api.com.
+_DEFAULT_NEGATIVE_TTL_SECONDS = 60
 
 
 @dataclass
@@ -61,11 +66,13 @@ class GeoIPResolver:
         endpoint: str = _DEFAULT_ENDPOINT,
         timeout: float = _DEFAULT_TIMEOUT,
         ttl_seconds: int = _DEFAULT_TTL_SECONDS,
+        negative_ttl_seconds: int = _DEFAULT_NEGATIVE_TTL_SECONDS,
         http_client: httpx.AsyncClient | None = None,
     ):
         self._endpoint = endpoint
         self._timeout = timeout
         self._ttl = ttl_seconds
+        self._negative_ttl = negative_ttl_seconds
         self._cache: dict[str, _CacheEntry] = {}
         # One lock per resolver so concurrent ``resolve_region`` calls
         # for *different* IPs don't serialise. Single lock around cache
@@ -100,8 +107,15 @@ class GeoIPResolver:
 
         region = await self._fetch_region(ip)
 
+        # Negative caching keeps us from stampeding ip-api.com when it
+        # rate-limits us, but uses a much shorter TTL than positive
+        # results — a transient 429 must not lock an IP out of region
+        # detection for 24h. Same code path for ``status: fail`` which
+        # is permanent (private IPs, reserved blocks): caching them
+        # for ``_negative_ttl`` is wasted retries but the volume is low.
+        ttl = self._ttl if region is not None else self._negative_ttl
         async with self._lock:
-            self._cache[ip] = _CacheEntry(region=region, expires_at=now + self._ttl)
+            self._cache[ip] = _CacheEntry(region=region, expires_at=now + ttl)
         return region
 
     async def _fetch_region(self, ip: str) -> Optional[str]:

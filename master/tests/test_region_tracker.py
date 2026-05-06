@@ -135,7 +135,7 @@ async def test_refresh_respects_user_override(db_session):
     async with httpx.AsyncClient(transport=transport) as http:
         counts = await refresh_client_regions(db_session, resolver=resolver, http_client=http)
 
-    assert counts["updated"] == 0
+    assert counts == {"seen": 1, "updated": 0, "skipped": 1}
     profile = (
         await db_session.execute(
             select(ClientRoutingProfile).where(
@@ -146,6 +146,28 @@ async def test_refresh_respects_user_override(db_session):
     # User-set value preserved; tracker noted "skipped".
     assert profile.region == "RU-SPE"
     assert profile.region_override == 1
+
+
+@pytest.mark.asyncio
+async def test_refresh_counts_unchanged_region_as_skipped(db_session):
+    """``seen == updated + skipped`` is the contract operators expect."""
+    _, _ = await _seed_node_and_client(db_session)
+    db_session.add(
+        ClientRoutingProfile(
+            client_external_id="tg_user_1",
+            mode="smart",
+            region="RU-MOW",
+            region_override=0,
+        )
+    )
+    await db_session.commit()
+
+    transport = httpx.MockTransport(_agent_handler({"tg_user_1": {"endpoint_ip": "1.2.3.4"}}))
+    resolver = _FakeResolver({"1.2.3.4": "RU-MOW"})
+    async with httpx.AsyncClient(transport=transport) as http:
+        counts = await refresh_client_regions(db_session, resolver=resolver, http_client=http)
+
+    assert counts == {"seen": 1, "updated": 0, "skipped": 1}
 
 
 @pytest.mark.asyncio

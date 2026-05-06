@@ -150,6 +150,42 @@ async def test_fetch_tag_recursive_swallows_http_errors():
 
 
 @pytest.mark.asyncio
+async def test_import_tags_dedupes_overlapping_includes(db_session):
+    """Recursive includes that reference the same domain must not crash.
+
+    Regression test for the IntegrityError on duplicate
+    ``(tag, kind, value)`` rows surfaced by Devin Review. Parent and
+    child tags both list ``shared.example`` — without dedup, the
+    second insert hits ``UniqueConstraint`` and the whole import
+    aborts.
+    """
+    import httpx
+    from kosatka_master.services.geosite_importer import import_tags
+
+    pages = {
+        "parent": "include:child\nshared.example\nparent-only.example",
+        "child": "shared.example\nchild-only.example",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        tag = request.url.path.rsplit("/", 1)[-1]
+        return httpx.Response(200, text=pages[tag])
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as http:
+        counts = await import_tags(db_session, ["parent"], http_client=http)
+
+    # 3 distinct rows: shared, parent-only, child-only.
+    assert counts == {"parent": 3}
+    rows = await expand_tag(db_session, "parent")
+    assert {r.value for r in rows} == {
+        "shared.example",
+        "parent-only.example",
+        "child-only.example",
+    }
+
+
+@pytest.mark.asyncio
 async def test_list_tags_and_expand_tag_roundtrip(db_session):
     """End-to-end DB write/read for the importer's persistence layer."""
     from kosatka_master.models.routing import GeositeEntry

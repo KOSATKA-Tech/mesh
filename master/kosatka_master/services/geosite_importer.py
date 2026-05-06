@@ -177,17 +177,32 @@ async def import_tags(
             if not rows:
                 counts[tag] = 0
                 continue
+            # ``counts`` reports how many *distinct* rows landed in the
+            # DB, not how many were fetched — duplicates are a
+            # property of the upstream tag graph, not of our import,
+            # and operators care about the visible state.
             # Replace the old set in one batch. Keep this scoped to a
             # single tag at a time so a partial failure on tag N doesn't
             # wipe the still-current rows of tag N+1.
+            # Deduplicate before insert: a parent tag and an ``include:``d
+            # child tag can independently list the same domain, and the
+            # ``UniqueConstraint("tag", "kind", "value")`` on
+            # ``GeositeEntry`` would turn that into an IntegrityError that
+            # rolls back the transaction (already-deleted rows are gone,
+            # the session goes into a failed state, and every subsequent
+            # tag in the same call also fails). ``ParsedRow`` is
+            # ``frozen=True`` so it's hashable; ``dict.fromkeys`` keeps
+            # the first-seen order which preserves source-line ordering
+            # for any debug dumps.
+            unique_rows = list(dict.fromkeys(rows))
             await db.execute(delete(GeositeEntry).where(GeositeEntry.tag == tag))
             db.add_all(
                 GeositeEntry(tag=tag, kind=r.kind, value=r.value, import_version=version)
-                for r in rows
+                for r in unique_rows
             )
             await db.commit()
-            counts[tag] = len(rows)
-            logger.info("Imported %d rows for geosite tag %r", len(rows), tag)
+            counts[tag] = len(unique_rows)
+            logger.info("Imported %d rows for geosite tag %r", len(unique_rows), tag)
     finally:
         if own_client:
             await client.aclose()

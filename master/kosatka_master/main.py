@@ -38,9 +38,13 @@ async def _apply_lightweight_migrations() -> None:
                 result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
                 existing_columns = {row[1] for row in result.fetchall()}
             else:
+                # Scope the lookup to the ``public`` schema so we don't
+                # falsely "find" the column on a same-named table living
+                # in pg_catalog / information_schema / a user schema and
+                # silently skip the migration on the real ``public.<table>``.
                 result = await conn.exec_driver_sql(
                     "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_name = '{table}'"
+                    f"WHERE table_schema = 'public' AND table_name = '{table}'"
                 )
                 existing_columns = {row[0] for row in result.fetchall()}
             if column not in existing_columns:

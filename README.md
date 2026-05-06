@@ -22,84 +22,100 @@
 
 ---
 
-## 🛠 Installation
+## 🛠 Installation (local development)
+
+For hacking on the codebase or running a single-host master/agent pair without Docker:
 
 ```bash
-# Clone the repository
+# 1. Clone
 git clone https://github.com/6dba/mesh.git
 cd mesh
 
-# Create an isolated venv and activate it. ``uv pip install -e .``
-# below targets whatever venv is currently active, so skipping these
-# two lines installs the editable workspace into the system Python and
-# the ``kosatka-mesh`` entrypoint won't appear on PATH.
+# 2. Create + activate a venv. Without this step `uv pip install -e .`
+#    targets the system Python and the `kosatka-mesh` entrypoint never
+#    lands on PATH.
 uv venv
 source .venv/bin/activate
 
-# Install in editable mode (installs master, agent, sdk, and cli)
+# 3. Install the workspace (master, agent, sdk, cli).
 uv pip install -e .
 
-# Copy the example env file and fill in the secrets before running
-# ``kosatka-mesh master run`` — the master refuses to start without a
-# valid ``KOSATKA_API_KEY``.
-cp .env.example .env
+# 4. Pick the role you're configuring and copy the matching env example.
+#    For master:
+cp .env.master.example .env
+# OR for agent:
+# cp .env.agent.example .env
+
+# 5. Edit `.env`, then start the role you copied:
+kosatka-mesh master run --port 8000
+# OR
+# kosatka-mesh agent run --port 8010
 ```
 
-### Docker (recommended for production)
+The master process auto-creates the SQLite parent directory on startup,
+so the default `KOSATKA_DATABASE_URL=sqlite+aiosqlite:///./data/kosatka.db`
+works out of the box without `mkdir data` first.
 
-Two compose files split the deployment between control plane and edge nodes:
+---
+
+## 🐋 Docker deployment (recommended for production)
+
+The deployment is split into two compose files — one per role — so a
+master host and an agent host configure cleanly without overlapping
+variables.
+
+### Master host
 
 ```bash
-# On the master host (brings up Postgres 16 + master API):
-docker compose -f docker-compose.master.yml up -d --build
+git clone https://github.com/6dba/mesh.git
+cd mesh
 
-# On each agent host (registers itself with the master via env vars):
-docker compose -f docker-compose.agent.yml up -d --build
+# Create the master env from the template and fill in the secrets.
+cp .env.master.example .env.master
+$EDITOR .env.master   # set KOSATKA_API_KEY etc.
+
+# Brings up Postgres 16 + the master API. Postgres credentials are
+# hardcoded inside the compose file (this is an internal control-plane
+# DB, not exposed to the host network), so operators only need to
+# supply application-level settings from .env.master.
+docker compose -f docker-compose.master.yml --env-file .env.master \
+    up -d --build
 ```
 
-The master container provisions its own Postgres database with hardcoded
-intra-compose credentials — operators only need to supply
-``KOSATKA_API_KEY`` and the other application-level settings from
-`.env.example`.
+The master listens on `:8000`. Verify with:
+
+```bash
+curl -s http://localhost:8000/health   # → {"status":"ok"}
+```
+
+### Agent host
+
+```bash
+git clone https://github.com/6dba/mesh.git
+cd mesh
+
+cp .env.agent.example .env.agent
+$EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, KOSATKA_API_KEY
+
+docker compose -f docker-compose.agent.yml --env-file .env.agent \
+    up -d --build
+```
+
+The agent listens on `:8010`. Then, from any host that can reach both:
+
+```bash
+kosatka-mesh login <master-api-key> --base-url https://your-master-domain
+kosatka-mesh nodes add --name "Germany-01" \
+    --url "http://<agent-ip>:8010" --key "<agent-api-key>"
+```
+
+After registration, the master starts polling the agent's capabilities and you can provision profiles via `kosatka-mesh nodes provision ...`.
 
 ---
 
 ## 📖 Operational Pipelines
 
-### 1. Bootstrapping the Master Node
-The Master is the "brain" of the mesh. It requires an API Key for security.
-
-1. **Configure the Key**: Create a `.env` file in the root or set environment variables:
-   ```bash
-   export KOSATKA_API_KEY="my-secure-master-key"
-   ```
-2. **Start Master**:
-   ```bash
-   kosatka-mesh master run --port 8000
-   ```
-3. **Login with CLI**:
-   ```bash
-   kosatka-mesh login my-secure-master-key --base-url http://localhost:8000
-   ```
-
-### 2. Setting up a Remote Agent Node
-The Agent runs on your VPN servers. It abstracts the underlying VPN software (AmneziaWG, etc.).
-
-1. **Configure Agent**: Set the Agent's local API key (used by Master to talk to Agent):
-   ```bash
-   export KOSATKA_API_KEY="agent-secret-key"
-   ```
-2. **Start Agent**:
-   ```bash
-   kosatka-mesh agent run --port 8010
-   ```
-3. **Register Node in Master**:
-   Tell the Master about this new node:
-   ```bash
-   kosatka-mesh nodes add --name "Germany-01" --url "http://agent-ip:8010" --key "agent-secret-key"
-   ```
-
-### 3. Creating a VPN Profile (Client Provisioning)
+### Creating a VPN Profile (Client Provisioning)
 Once the node is registered, creating a VPN profile is seamless. You don't need to know which VPN software is running; the Master handles it.
 
 **Via CLI**:

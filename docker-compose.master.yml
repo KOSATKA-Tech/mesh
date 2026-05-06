@@ -9,7 +9,9 @@
 # / .env file as documented in .env.example.
 #
 # Run from the repo root:
-#     docker compose -f docker-compose.master.yml up -d --build
+#     cp .env.master.example .env.master   # edit secrets
+#     docker compose -f docker-compose.master.yml --env-file .env.master \
+#         up -d --build
 services:
   postgres:
     image: postgres:16-alpine
@@ -51,6 +53,14 @@ services:
       KOSATKA_WEBHOOK_SECRET: ${KOSATKA_WEBHOOK_SECRET:-default-webhook-secret}
       KOSATKA_SYNC_INTERVAL: ${KOSATKA_SYNC_INTERVAL:-60}
       KOSATKA_EXPIRATION_CHECK_INTERVAL: ${KOSATKA_EXPIRATION_CHECK_INTERVAL:-300}
+    # ``env_file`` makes the master service load .env.master automatically
+    # when the operator runs the compose command WITHOUT --env-file. The
+    # explicit --env-file flag in the docs above is still recommended
+    # because it also expands ${...} substitutions in this file from the
+    # same source.
+    env_file:
+      - path: .env.master
+        required: false
     restart: always
 
 volumes:

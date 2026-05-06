@@ -6,9 +6,11 @@
 # image can be deployed to multiple agent hosts without rebuilding.
 #
 # Run from the repo root on each agent host:
-#     docker compose -f docker-compose.agent.yml up -d --build
+#     cp .env.agent.example .env.agent   # edit secrets
+#     docker compose -f docker-compose.agent.yml --env-file .env.agent \
+#         up -d --build
 #
-# Required env vars (see .env.example for the full list):
+# Required env vars (see .env.agent.example for the full list):
 #   AGENT_API_KEY        — shared secret the master will use to call us.
 #   KOSATKA_MASTER_URL   — public URL of the master, e.g. https://master.example.com.
 #   KOSATKA_API_KEY      — master's API key, used during self-registration.
@@ -33,6 +35,11 @@ services:
     volumes:
       # Persist provider state (peer lists, server keys) across restarts.
       - agent_state:/opt/kosatka/agent
+    # Same auto-load mechanism as the master compose file — see comment
+    # in docker-compose.master.yml.
+    env_file:
+      - path: .env.agent
+        required: false
     restart: always
 
 volumes:

@@ -1,0 +1,57 @@
+# KOSATKA Mesh — Master compose file.
+#
+# Brings up the master API together with a dedicated Postgres 16
+# container. Postgres credentials are deliberately hardcoded (this is a
+# single-deployment internal database, not a shared service) so a fresh
+# `docker compose -f docker-compose.master.yml up -d` works with no
+# extra configuration. Master-facing settings (``KOSATKA_API_KEY``,
+# ``KOSATKA_WEBHOOK_SECRET``, etc.) are still read from the environment
+# / .env file as documented in .env.example.
+#
+# Run from the repo root:
+#     docker compose -f docker-compose.master.yml up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      # Hardcoded — see file header. Override only if you know what
+      # you're doing; the master service below targets these exact
+      # values in its DATABASE_URL.
+      POSTGRES_USER: kosatka
+      POSTGRES_PASSWORD: kosatka
+      POSTGRES_DB: kosatka
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kosatka -d kosatka"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  master:
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      # DATABASE_URL is pinned to the colocated Postgres container so
+      # the master never accidentally falls back to its sqlite default
+      # in production.
+      KOSATKA_DATABASE_URL: postgresql+asyncpg://kosatka:kosatka@postgres:5432/kosatka
+      # Everything else is operator-supplied — same surface as
+      # .env.example. Compose forwards these from the host environment
+      # / .env file automatically when listed without a value.
+      KOSATKA_API_KEY: ${KOSATKA_API_KEY}
+      KOSATKA_AGENT_API_KEY: ${KOSATKA_AGENT_API_KEY:-}
+      KOSATKA_WEBHOOK_SECRET: ${KOSATKA_WEBHOOK_SECRET:-default-webhook-secret}
+      KOSATKA_SYNC_INTERVAL: ${KOSATKA_SYNC_INTERVAL:-60}
+      KOSATKA_EXPIRATION_CHECK_INTERVAL: ${KOSATKA_EXPIRATION_CHECK_INTERVAL:-300}
+    restart: always
+
+volumes:
+  postgres_data:

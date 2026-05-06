@@ -1,0 +1,39 @@
+# KOSATKA Mesh — Agent compose file.
+#
+# Stands up a single agent that registers itself with an existing master
+# (run separately via docker-compose.master.yml on the master host).
+# Every setting comes from the host environment / .env so the same
+# image can be deployed to multiple agent hosts without rebuilding.
+#
+# Run from the repo root on each agent host:
+#     docker compose -f docker-compose.agent.yml up -d --build
+#
+# Required env vars (see .env.example for the full list):
+#   AGENT_API_KEY        — shared secret the master will use to call us.
+#   KOSATKA_MASTER_URL   — public URL of the master, e.g. https://master.example.com.
+#   KOSATKA_API_KEY      — master's API key, used during self-registration.
+#   AGENT_PROVIDER_TYPE  — wireguard | awg | marzban | xray.
+services:
+  agent:
+    build:
+      context: .
+      dockerfile: agent/Dockerfile
+    ports:
+      - "8010:8000"
+    environment:
+      AGENT_API_KEY: ${AGENT_API_KEY}
+      AGENT_PROVIDER_TYPE: ${AGENT_PROVIDER_TYPE:-wireguard}
+      AGENT_MARZBAN_URL: ${AGENT_MARZBAN_URL:-}
+      AGENT_MARZBAN_USERNAME: ${AGENT_MARZBAN_USERNAME:-}
+      AGENT_MARZBAN_PASSWORD: ${AGENT_MARZBAN_PASSWORD:-}
+      # Used by registration scripts / self-bootstrap, not the agent
+      # process itself. Forwarded for parity with the install.sh flow.
+      KOSATKA_MASTER_URL: ${KOSATKA_MASTER_URL}
+      KOSATKA_API_KEY: ${KOSATKA_API_KEY}
+    volumes:
+      # Persist provider state (peer lists, server keys) across restarts.
+      - agent_state:/opt/kosatka/agent
+    restart: always
+
+volumes:
+  agent_state:

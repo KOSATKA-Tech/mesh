@@ -8,6 +8,12 @@ dependencies = [
     "uvicorn",
     "sqlalchemy[asyncio]",
     "aiosqlite",
+    # asyncpg is required by the production docker-compose.master.yml
+    # which provisions a Postgres 16 container. Local dev still defaults
+    # to sqlite via ``KOSATKA_DATABASE_URL`` so this is the only extra
+    # cost — a few MB of wheel — to keep both backends supported from a
+    # single codebase.
+    "asyncpg",
     "pydantic-settings",
     "apscheduler",
     "httpx",

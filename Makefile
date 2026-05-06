@@ -1,16 +1,20 @@
-.PHONY: dev-up dev-down prod-up prod-down deploy test lint sync docs clean master agent
+.PHONY: master-up master-down agent-up agent-down deploy test lint sync docs clean master agent
 
-dev-up:
-	docker-compose up -d --build
+# The single docker-compose.yml / docker-compose.prod.yml pair was
+# replaced by per-role compose files: master colocates Postgres with
+# the API service, agent runs alone and registers with a remote master
+# via env-vars (see docker-compose.agent.yml for the required vars).
+master-up:
+	docker compose -f docker-compose.master.yml up -d --build
 
-dev-down:
-	docker-compose down
+master-down:
+	docker compose -f docker-compose.master.yml down
 
-prod-up:
-	docker-compose -f docker-compose.prod.yml up -d --build
+agent-up:
+	docker compose -f docker-compose.agent.yml up -d --build
 
-prod-down:
-	docker-compose -f docker-compose.prod.yml down
+agent-down:
+	docker compose -f docker-compose.agent.yml down
 
 deploy:
 	cd ansible && ./deploy.sh

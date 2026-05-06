@@ -29,9 +29,38 @@
 git clone https://github.com/6dba/mesh.git
 cd mesh
 
+# Create an isolated venv and activate it. ``uv pip install -e .``
+# below targets whatever venv is currently active, so skipping these
+# two lines installs the editable workspace into the system Python and
+# the ``kosatka-mesh`` entrypoint won't appear on PATH.
+uv venv
+source .venv/bin/activate
+
 # Install in editable mode (installs master, agent, sdk, and cli)
 uv pip install -e .
+
+# Copy the example env file and fill in the secrets before running
+# ``kosatka-mesh master run`` — the master refuses to start without a
+# valid ``KOSATKA_API_KEY``.
+cp .env.example .env
 ```
+
+### Docker (recommended for production)
+
+Two compose files split the deployment between control plane and edge nodes:
+
+```bash
+# On the master host (brings up Postgres 16 + master API):
+docker compose -f docker-compose.master.yml up -d --build
+
+# On each agent host (registers itself with the master via env vars):
+docker compose -f docker-compose.agent.yml up -d --build
+```
+
+The master container provisions its own Postgres database with hardcoded
+intra-compose credentials — operators only need to supply
+``KOSATKA_API_KEY`` and the other application-level settings from
+`.env.example`.
 
 ---
 

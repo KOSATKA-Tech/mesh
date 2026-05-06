@@ -24,15 +24,25 @@ _LIGHTWEIGHT_MIGRATIONS: list[tuple[str, str, str]] = [
 
 
 async def _apply_lightweight_migrations() -> None:
-    """Add columns that were introduced after the first deployment."""
+    """Add columns that were introduced after the first deployment.
+
+    Supports both SQLite (``PRAGMA table_info``) and Postgres
+    (``information_schema``) so the same code path works for the new
+    ``docker-compose.master.yml`` Postgres deployment and for local
+    ``sqlite+aiosqlite`` development.
+    """
+    dialect = engine.dialect.name  # 'sqlite' | 'postgresql' | ...
     async with engine.begin() as conn:
         for table, column, sql_type in _LIGHTWEIGHT_MIGRATIONS:
-            # SQLite's `PRAGMA table_info` is the portable-enough way to
-            # detect an existing column for an MVP; every other backend
-            # we might swap in (Postgres) supports it via
-            # information_schema, but we only deploy on SQLite today.
-            result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
-            existing_columns = {row[1] for row in result.fetchall()}
+            if dialect == "sqlite":
+                result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
+                existing_columns = {row[1] for row in result.fetchall()}
+            else:
+                result = await conn.exec_driver_sql(
+                    "SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_name = '{table}'"
+                )
+                existing_columns = {row[0] for row in result.fetchall()}
             if column not in existing_columns:
                 await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
 

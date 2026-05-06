@@ -22,6 +22,12 @@ services:
       POSTGRES_USER: kosatka
       POSTGRES_PASSWORD: kosatka
       POSTGRES_DB: kosatka
+    # Expose Postgres on host port 5433 (not the default 5432) so the
+    # control-plane DB doesn't collide with any other Postgres the host
+    # might already be running. Inside the compose network the master
+    # service still talks to ``postgres:5432`` directly.
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

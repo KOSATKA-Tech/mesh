@@ -4,7 +4,7 @@ import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
@@ -12,6 +12,7 @@ from sqlalchemy import text
 from .api.v1.router import api_router
 from .database import Base, engine
 from .scheduler import scheduler, setup_scheduler
+from .security import get_api_key
 
 # Columns added to existing tables by recent feature work. `create_all`
 # only creates missing tables — it cannot `ALTER TABLE … ADD COLUMN` on
@@ -104,8 +105,18 @@ def _resolve_ansible_dir() -> Path:
 
 
 @app.get("/api/v1/static/ansible.tar.gz")
-async def download_ansible_playbooks(background_tasks: BackgroundTasks):
-    """Pack the ansible directory and serve it as a tarball."""
+async def download_ansible_playbooks(
+    background_tasks: BackgroundTasks,
+    _: str = Depends(get_api_key),
+):
+    """Pack the ansible directory and serve it as a tarball.
+
+    Requires the same ``X-Kosatka-Key`` header as the rest of ``/api/v1/*``.
+    The ansible tree contains the agent self-bootstrap playbooks and
+    must not be downloadable by anonymous clients on the public internet.
+    ``install.sh`` forwards the operator's ``--token`` value as the
+    header so the existing bootstrap flow keeps working.
+    """
     ansible_dir = _resolve_ansible_dir()
 
     fd, temp_path = tempfile.mkstemp(suffix=".tar.gz")

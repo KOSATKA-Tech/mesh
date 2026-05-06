@@ -111,6 +111,14 @@ After registration, the master starts polling the agent's capabilities and you c
 
 ---
 
+## 📚 Architecture
+
+For a deeper walkthrough of the components, request flows
+(provisioning, scheduled sync, webhook delivery), and the auth model,
+see [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+
+---
+
 ## 📖 Operational Pipelines
 
 ### Creating a VPN Profile (Client Provisioning)

@@ -14,6 +14,17 @@ class Settings(BaseSettings):
     webhook_secret: str = "default-webhook-secret"
     sync_interval: int = 60
     expiration_check_interval: int = 300
+    # Geosite re-import cadence. v2fly/domain-list-community lands a few
+    # commits a day, so re-pulling every 24h is the right tradeoff
+    # between freshness and not hammering the upstream raw.githubusercontent
+    # CDN. ``0`` disables the scheduled job (manual ``POST
+    # /api/v1/policies/import-geosite`` still works).
+    geosite_refresh_interval: int = 86400
+    # Default tags to keep refreshed in the background. Empty list ⇒ no
+    # automatic refresh; operators add tags as they reference them in
+    # policies. Common picks for a Russian-speaking deployment:
+    # ``category-ru-blocked``, ``geolocation-!ru``, ``category-ads-all``.
+    geosite_default_tags: list[str] = []
 
     def effective_agent_api_key(self) -> str:
         return self.agent_api_key or self.api_key

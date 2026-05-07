@@ -28,3 +28,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kosatka_master"]
+
+[tool.coverage.run]
+# FastAPI dispatches handlers via `anyio.to_thread.run_sync` for sync
+# handlers and via the running event loop for async ones. Without
+# ``concurrency = ['thread']`` pytest-cov misses every line executed
+# inside the threadpool, which is why a passing endpoint test still
+# reports its handler body as uncovered.
+concurrency = ["thread", "greenlet"]
+source = ["kosatka_master"]

@@ -29,6 +29,23 @@ async def engine():
     await engine.dispose()
 
 
+@pytest.fixture(autouse=True)
+async def _isolate_per_test(engine):
+    """Wipe every table before each test.
+
+    The session-scoped engine is shared across the whole pytest run, and
+    the FastAPI handlers commit explicitly, so without this hook every
+    test inherits the previous test's rows and assertions on "starts
+    empty" or "lookup by unique name" silently break in non-deterministic
+    test orders. Truncating before each test gives every case a clean
+    slate without paying the cost of recreating the schema.
+    """
+    async with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+    yield
+
+
 @pytest.fixture
 async def db_session(engine):
     SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

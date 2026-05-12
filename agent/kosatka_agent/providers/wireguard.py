@@ -29,8 +29,12 @@ class WireGuardProvider(BaseAgentProvider):
 
     async def _ensure_server(self) -> wg.ServerInfo:
         server = wg.load_server_info(self.server_info_path)
-        if server is None:
-            logger.info("WG server info missing, bootstrapping...")
+        is_up = await wg.interface_exists(self.interface)
+
+        if server is None or not is_up:
+            logger.info(
+                f"WG server status: info={server is not None}, interface_up={is_up}. Bootstrapping/re-upping..."
+            )
             return await wg.bootstrap_server(CMD, self.server_info_path, self.interface)
         return server
 

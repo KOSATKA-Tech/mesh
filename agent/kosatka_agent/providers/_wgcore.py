@@ -177,6 +177,15 @@ def render_client_config(
     return "\n".join(lines) + "\n"
 
 
+async def interface_exists(interface: str) -> bool:
+    """Check if a network interface exists in the system."""
+    try:
+        await run(["ip", "link", "show", interface])
+        return True
+    except (RuntimeError, FileNotFoundError):
+        return False
+
+
 async def bootstrap_server(
     cmd_prefix: str,
     server_info_path: str,
@@ -214,10 +223,7 @@ async def bootstrap_server(
 
     server = ServerInfo(public_key=pubkey, endpoint=endpoint, subnet=subnet, awg_params=awg_params)
 
-    # 5. Save server info
-    save_server_info(server_info_path, server)
-
-    # 6. Generate and save wg0.conf
+    # 5. Generate and save wg0.conf
     # We write a minimal config. wg-quick will use this.
     conf_dir = "/etc/amnezia/amneziawg" if cmd_prefix == "awg" else "/etc/wireguard"
     os.makedirs(conf_dir, exist_ok=True)
@@ -234,15 +240,20 @@ async def bootstrap_server(
 
     conf_path.write_text("\n".join(conf_lines) + "\n")
 
-    # 7. Bring up the interface
+    # 6. Bring up the interface
     try:
         await run([f"{cmd_prefix}-quick", "up", interface])
     except RuntimeError as exc:
         if "already exists" in str(exc):
             logger.info(f"Interface {interface} already up")
         else:
+            # Cleanup if we failed to bring up the interface
+            if conf_path.exists():
+                conf_path.unlink()
             raise
 
+    # 7. Save server info ONLY if interface is up
+    save_server_info(server_info_path, server)
     return server
 
 

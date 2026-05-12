@@ -89,6 +89,8 @@ curl -s http://localhost:8000/health   # → {"status":"ok"}
 
 ### Agent host
 
+#### Option A: Docker (recommended)
+
 ```bash
 git clone https://github.com/6dba/mesh.git
 cd mesh
@@ -97,6 +99,24 @@ cp .env.agent.example .env.agent
 $EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, KOSATKA_API_KEY
 
 docker compose -f docker-compose.agent.yml up -d --build
+```
+
+> [!IMPORTANT]
+> To manage VPN interfaces, the Docker container needs **NET_ADMIN** capabilities. If you encounter `Operation not permitted` errors, ensure `cap_add: [NET_ADMIN]` is in your compose file or use `privileged: true`.
+
+#### Option B: Native installation (via uv)
+
+If Docker networking is restricted on your host, you can run the agent natively:
+
+```bash
+# 1. Install uv if not present
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Install kosatka-mesh tool
+uv tool install . --editable  # run from repo root
+
+# 3. Configure .env.agent and run (requires sudo for networking)
+sudo kosatka-mesh agent run --port 8010
 ```
 
 The agent listens on `:8010`. Then, from any host that can reach both:

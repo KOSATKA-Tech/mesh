@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: agent/Dockerfile
+    privileged: true
     ports:
       - "8010:8010"
     # ``env_file`` populates the container's environment from

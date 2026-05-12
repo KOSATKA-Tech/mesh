@@ -8,6 +8,9 @@ from .config import load_config
 class APIClient:
     def __init__(self):
         self.config = load_config()
+        if self.config.base_url and "://" not in self.config.base_url:
+            self.config.base_url = f"http://{self.config.base_url}"
+
         self.headers = {
             "Content-Type": "application/json",
         }

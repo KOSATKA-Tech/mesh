@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -97,11 +98,24 @@ async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> D
 
     key = node.api_key or settings.effective_agent_api_key()
     provider = AgentNodeProvider(key)
-    is_up = await provider.sync_node(node.address)
+    health_data = await provider.sync_node(node.address)
+
+    is_up = health_data is not None
+    if is_up:
+        node.status = "online"
+        if health_data.get("provider"):
+            node.provider_type = health_data["provider"]
+    else:
+        node.status = "offline"
+
+    node.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+    await db.commit()
+    await db.refresh(node)
+
     return {
         "id": node.id,
         "name": node.name,
         "address": node.address,
-        "status": "online" if is_up else "offline",
+        "status": node.status,
         "provider_type": node.provider_type,
     }

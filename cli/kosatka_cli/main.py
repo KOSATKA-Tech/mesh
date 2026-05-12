@@ -47,6 +47,8 @@ def login(
     api_key: str = typer.Argument(..., help="Admin API Key"),
 ):
     """Log in to a Kosatka Master instance"""
+    if "://" not in base_url:
+        base_url = f"http://{base_url}"
     cfg = config.Config(base_url=base_url, api_key=api_key)
     config.save_config(cfg)
     console.print(f"[green]Successfully saved configuration to {config.CONFIG_FILE}[/green]")

@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timezone
+from typing import Any, Dict
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,7 @@ class NodeManager:
         # to time out, ten nodes alone could blow past the next tick and
         # starve the scheduler. ``return_exceptions=True`` keeps one
         # misbehaving agent from short-circuiting the rest.
-        async def _probe(node: Node) -> bool:
+        async def _probe(node: Node) -> Dict[str, Any] | None:
             key = node.api_key or settings.effective_agent_api_key()
             provider = AgentNodeProvider(key)
             return await provider.sync_node(node.address)
@@ -46,8 +47,15 @@ class NodeManager:
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
         for node, outcome in zip(nodes, results):
-            is_up = outcome is True  # Exceptions / False both \u2192 offline.
+            # outcome is either Dict, None, or an Exception
+            is_up = isinstance(outcome, dict)
             node.status = "online" if is_up else "offline"
             node.last_seen = now
+
+            if is_up and outcome.get("provider"):
+                # Autodiscovery: update the node's provider type based on what
+                # the agent reports. This allows registering as 'agent' and
+                # having the master figure out it's actually 'wireguard'.
+                node.provider_type = outcome["provider"]
 
         await self.db.commit()

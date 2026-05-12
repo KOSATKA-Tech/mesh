@@ -14,7 +14,7 @@ class AgentNodeProvider(BaseNodeProvider):
         # but usually it's one agent per node.
         return []
 
-    async def sync_node(self, node_address: str) -> bool:
+    async def sync_node(self, node_address: str) -> Dict[str, Any] | None:
         # The agent exposes `/health` (not `/api/v1/status`). Hitting a
         # non-existent path would mark every node offline forever.
         headers = {}
@@ -24,10 +24,12 @@ class AgentNodeProvider(BaseNodeProvider):
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
-                    f"{node_address.rstrip('/')}/health",
+                    f"{node_address.rstrip('/')}/health/",
                     headers=headers,
                     timeout=5.0,
                 )
-                return response.status_code == 200
+                if response.status_code == 200:
+                    return response.json()
+                return None
             except Exception:
-                return False
+                return None

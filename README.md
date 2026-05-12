@@ -103,8 +103,7 @@ The agent listens on `:8010`. Then, from any host that can reach both:
 
 ```bash
 kosatka-mesh login <master-api-key> --base-url https://your-master-domain
-kosatka-mesh nodes add --name "Germany-01" \
-    --url "http://<agent-ip>:8010" --key "<agent-api-key>"
+kosatka-mesh nodes add "Germany-01" "http://<agent-ip>:8010" --api-key "<agent-api-key>"
 ```
 
 After registration, the master starts polling the agent's capabilities and you can provision profiles via `kosatka-mesh nodes provision ...`.
@@ -127,7 +126,7 @@ Once the node is registered, creating a VPN profile is seamless. You don't need 
 **Via CLI**:
 ```bash
 # This will find the best node, create a profile, and return the config
-kosatka-mesh nodes provision --name "user-laptop" --protocol "amneziawg"
+kosatka-mesh nodes provision "user-laptop" --protocol "amneziawg"
 ```
 
 **Via Python SDK**:

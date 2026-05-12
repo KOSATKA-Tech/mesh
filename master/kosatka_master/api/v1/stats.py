@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter(prefix="/stats", tags=["stats"], dependencies=[Depends(get_api_key)])
 
 
-@router.get("/")
+@router.get("/summary/")
 async def get_stats(db: AsyncSession = Depends(get_db)):
     nodes_count = await db.scalar(select(func.count(Node.id)))
     clients_count = await db.scalar(select(func.count(Client.id)))

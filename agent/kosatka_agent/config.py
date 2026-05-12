@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    api_key: str = "change-me-agent"
+    api_key: str | None = None
     provider_type: str = "wireguard"  # awg | wireguard | marzban | xray
 
     # Provider specific settings

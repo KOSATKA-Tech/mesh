@@ -17,11 +17,15 @@ class AgentNodeProvider(BaseNodeProvider):
     async def sync_node(self, node_address: str) -> bool:
         # The agent exposes `/health` (not `/api/v1/status`). Hitting a
         # non-existent path would mark every node offline forever.
+        headers = {}
+        if self.api_key:
+            headers["X-Kosatka-Key"] = self.api_key
+
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.get(
                     f"{node_address.rstrip('/')}/health",
-                    headers={"X-Kosatka-Key": self.api_key},
+                    headers=headers,
                     timeout=5.0,
                 )
                 return response.status_code == 200

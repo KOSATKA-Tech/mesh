@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: agent/Dockerfile
     ports:
-      - "8010:8000"
+      - "8010:8010"
     # ``env_file`` populates the container's environment from
     # .env.agent if present. Operator-supplied values (AGENT_API_KEY,
     # AGENT_PROVIDER_TYPE, KOSATKA_MASTER_URL, etc.) come from there —

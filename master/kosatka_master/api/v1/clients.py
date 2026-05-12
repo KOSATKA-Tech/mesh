@@ -129,7 +129,10 @@ async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict
     # Use the node's specific key if set; fall back to the global key.
     # This allows per-node rotation.
     key = node.api_key or settings.effective_agent_api_key()
-    headers = {"X-Kosatka-Key": key}
+    headers = {}
+    if key:
+        headers["X-Kosatka-Key"] = key
+
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.request(method, url, headers=headers, **kwargs)
@@ -148,7 +151,7 @@ async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict
     return resp.json()
 
 
-@router.post("/provision", response_model=ClientProvisionResponse)
+@router.post("/provision/", response_model=ClientProvisionResponse)
 async def provision_client(
     req: ClientProvisionRequest, db: AsyncSession = Depends(get_db)
 ) -> ClientProvisionResponse:

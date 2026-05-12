@@ -87,7 +87,7 @@ async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
     return {"status": "success"}
 
 
-@router.get("/{node_id}/health")
+@router.get("/{node_id}/health/")
 async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """Probe agent health live. The SDK and CLI both call this endpoint."""
     result = await db.execute(select(Node).where(Node.id == node_id))

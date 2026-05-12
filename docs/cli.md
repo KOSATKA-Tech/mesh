@@ -23,7 +23,7 @@ uv pip install -e .
 ## Node Management
 
 - `kosatka-mesh nodes list`: List all registered nodes.
-- `kosatka-mesh nodes add`: Register a new node.
+- `kosatka-mesh nodes add NAME ADDRESS`: Register a new node.
 - `kosatka-mesh nodes remove`: Remove a node.
 
 ## Deployment

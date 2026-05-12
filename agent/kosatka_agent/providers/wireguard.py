@@ -27,13 +27,11 @@ class WireGuardProvider(BaseAgentProvider):
         self.server_info_path = settings.wg_server_info_path
         self.lock = asyncio.Lock()
 
-    def _server(self) -> wg.ServerInfo:
+    async def _ensure_server(self) -> wg.ServerInfo:
         server = wg.load_server_info(self.server_info_path)
         if server is None:
-            raise RuntimeError(
-                f"WG server info missing at {self.server_info_path}; "
-                "provision a server key pair and write server info first."
-            )
+            logger.info("WG server info missing, bootstrapping...")
+            return await wg.bootstrap_server(CMD, self.server_info_path, self.interface)
         return server
 
     async def get_clients(self) -> List[Dict[str, Any]]:
@@ -62,8 +60,9 @@ class WireGuardProvider(BaseAgentProvider):
 
             if client_id in state.peers:
                 peer = state.peers[client_id]
+                server = await self._ensure_server()
             else:
-                server = self._server()
+                server = await self._ensure_server()
                 private_key, public_key = await wg.generate_keypair(CMD)
                 preshared_key = await wg.generate_preshared_key(CMD)
                 address = wg.next_free_address(server.subnet, state)
@@ -79,7 +78,7 @@ class WireGuardProvider(BaseAgentProvider):
                 await wg.save_running_config(CMD, self.interface)
                 wg.save_state(self.state_path, state)
 
-            config_text = wg.render_client_config(peer, self._server())
+            config_text = wg.render_client_config(peer, server)
             return {
                 "id": peer.client_id,
                 "client_id": peer.client_id,
@@ -109,7 +108,8 @@ class WireGuardProvider(BaseAgentProvider):
         peer = state.peers.get(str(client_id))
         if peer is None:
             return ""
-        return wg.render_client_config(peer, self._server())
+        server = await self._ensure_server()
+        return wg.render_client_config(peer, server)
 
     async def get_client_stats(self, client_id: str) -> Dict[str, Any]:
         state = wg.load_state(self.state_path)

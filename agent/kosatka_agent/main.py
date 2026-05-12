@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import Depends, FastAPI, HTTPException
 
 from .config import settings
@@ -10,6 +12,7 @@ from .providers.xray import XrayProvider
 from .security import get_api_key
 
 app = FastAPI(title="Kosatka Mesh Agent")
+logger = logging.getLogger(__name__)
 
 
 def get_provider() -> BaseAgentProvider:
@@ -33,6 +36,21 @@ def get_provider() -> BaseAgentProvider:
 
 # Initialize provider
 provider = get_provider()
+
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info(f"Bootstrapping provider: {settings.provider_type}")
+    from .bootstrap import bootstrap_provider
+
+    try:
+        await bootstrap_provider(settings.provider_type)
+        # For WG/AWG, we also want to ensure the interface is up
+        if settings.provider_type in ("wireguard", "awg"):
+            if hasattr(provider, "_ensure_server"):
+                await provider._ensure_server()
+    except Exception as exc:
+        logger.error(f"Failed to bootstrap provider {settings.provider_type}: {exc}")
 
 
 @app.get("/health/")

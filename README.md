@@ -111,6 +111,66 @@ Building a stealth bridge requires two nodes with specific roles:
 
 ---
 
+## 📦 SDK Integration (e.g., for Telegram Bots)
+
+The `kosatka-sdk` is designed for seamless integration into third-party applications like subscription management bots.
+
+### Integration Example
+
+Here is how you can manage VPN subscriptions programmatically in your Python project:
+
+```python
+import asyncio
+from KosatkaMesh import MeshClient
+
+async def main():
+    # Initialize the client pointing to your Master Node
+    client = MeshClient(
+        base_url="https://your-master-domain.com",
+        api_key="your-master-admin-key"
+    )
+
+    # 1. List available locations (nodes)
+    nodes = await client.list_nodes()
+    for node in nodes:
+        print(f"Node: {node.name} | Load: {node.current_clients}/{node.max_clients}")
+
+    # 2. Provision a new VPN profile
+    # This automatically selects the best available node supporting the protocol
+    # Trend-aware load balancing is handled by the Master node.
+    profile = await client.provision(
+        name="user_12345",
+        protocol="amneziawg"
+    )
+
+    print(f"Profile created on Node ID: {profile.node_id}")
+    print(f"VPN Config:\n{profile.config_text}")
+
+    # 3. Revoke access
+    await client.revoke(profile.client_id)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+### Webhook Handling
+
+For real-time updates (e.g., notifying a user when their subscription is about to expire), you can use the built-in webhook utility:
+
+```python
+from KosatkaMesh.webhook import KosatkaWebhookHandler
+
+webhook = KosatkaWebhookHandler(secret="your-webhook-secret")
+
+@webhook.on("subscription_expired")
+async def handle_expiry(event):
+    # event.data contains the metadata you provided during provisioning
+    external_id = event.data.get("external_id")
+    print(f"Notifying user {external_id} that their access was revoked.")
+```
+
+---
+
 ## 📄 Documentation
 
 - [Architecture Overview](docs/architecture.md)

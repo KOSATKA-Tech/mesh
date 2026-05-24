@@ -15,7 +15,7 @@
 ## 🚀 Key Features
 
 - **Unified CLI**: Control your entire mesh via the `kosatka-mesh` command.
-- **Stealth Chaining**: Seamless **Proxy -> Exit** topology (e.g., RU -> EU) with **Xray Reality** obfuscation to bypass DPI.
+- **Stealth Chaining**: Seamless **Proxy -> Exit** topology with **Xray Reality** obfuscation to bypass DPI and censorship.
 - **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment (Docker/Host) and installs necessary binaries (Xray, WireGuard-go).
 - **Dynamic Traffic Shaping**: Self-protecting nodes. Automatically detects and throttles "heavy hitters" to preserve performance on low-end VPS.
 - **Trend-Aware Load Balancing**: Intelligent node selection based on real-time resource utilization trends (CPU/Bandwidth).
@@ -26,8 +26,8 @@
 
 ## 🏗 Architectural Features
 
-### 1. Stealth Infrastructure (Phase 2)
-Kosatka Mesh supports server-to-server chaining. You can register a node in a restricted region (RU) as a **Proxy** and link it to an **Exit** node in a free region (EU).
+### 1. Stealth Infrastructure
+Kosatka Mesh supports server-to-server chaining. You can register a node in a restricted region as a **Proxy** and link it to an **Exit** node in an unrestricted region.
 - **Transport**: VLESS + Reality (Xray-core).
 - **Visibility**: Traffic between nodes is indistinguishable from standard HTTPS traffic to trusted domains (e.g., Microsoft, Google).
 
@@ -38,9 +38,9 @@ No more manual `apt-get` or Ansible for every new node.
 - **Kernel-Independent**: Uses `wireguard-go` for userspace VPN if kernel modules are missing.
 
 ### 3. Dynamic Node Protection
-Protects 512MB RAM / 1-CPU nodes from being saturated by single users.
+Protects low-resource (e.g., 512MB RAM / 1-CPU) nodes from being saturated by single users.
 - **EMA Smoothing**: Monitors CPU/BW with Exponential Moving Average to ignore transient spikes.
-- **Penalty Box**: Active consumers are moved to a throttled class for 2-5 minutes if the node is under sustained high load.
+- **Penalty Box**: Active consumers are moved to a throttled class for a short cooling period if the node is under sustained high load.
 
 ---
 
@@ -67,24 +67,24 @@ kosatka-mesh master run --port 8000
 
 ## 📖 Usage Guides
 
-### Setting up a Stealth Chain (RU -> EU)
+### Setting up a Stealth Chain
 
-1. **Add the Exit node (EU)**:
+1. **Add the Exit node**:
    ```bash
-   kosatka-mesh nodes add "EU-Exit" "http://eu-ip:8010" --role exit
+   kosatka-mesh nodes add "Exit-Node" "http://exit-ip:8010" --role exit
    ```
 
-2. **Add the Proxy node (RU)**:
+2. **Add the Proxy node**:
    ```bash
    # CLI will interactively ask to pick an Exit node from the list
-   kosatka-mesh nodes add "RU-Proxy" "http://ru-ip:8010" --role proxy
+   kosatka-mesh nodes add "Proxy-Node" "http://proxy-ip:8010" --role proxy
    ```
 
 3. **Provision a stealth profile**:
    ```bash
-   kosatka-mesh nodes provision "my-stealth-link" --protocol "stealth-wg"
+   kosatka-mesh nodes provision "stealth-user" --protocol "stealth-wg"
    ```
-   *The client gets a config pointing to the RU IP, but traffic exits through the EU node.*
+   *The client gets a config pointing to the Proxy node, but traffic exits through the Exit node.*
 
 ### Enabling Autonomous Shaping
 
@@ -93,7 +93,7 @@ On the Agent host, set the following environment variables:
 AGENT_SHAPING_ENABLED=true
 AGENT_SHAPING_TOTAL_RATE=100mbit
 ```
-The agent will now autonomously monitor load and throttle heavy users when CPU > 70%.
+The agent will now autonomously monitor load and throttle heavy users when sustained load is detected.
 
 ---
 

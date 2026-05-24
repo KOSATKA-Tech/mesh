@@ -26,24 +26,29 @@
 
 ## 🏗 Architectural Features
 
-### 1. Stealth Infrastructure
-Kosatka Mesh supports server-to-server chaining. You can register a node in a restricted region as a **Proxy** and link it to an **Exit** node in an unrestricted region.
-- **Transport**: VLESS + Reality (Xray-core).
-- **Visibility**: Traffic between nodes is indistinguishable from standard HTTPS traffic to trusted domains.
+### 1. Stealth Infrastructure & Node Roles
+Kosatka Mesh introduces a powerful role-based system for building complex network topologies:
+
+- **`standalone` (Default)**: A standard VPN node. Clients connect directly to this server, and it provides direct internet access.
+- **`exit` (Termination)**: A node located in an unrestricted region. It serves as the final "hop" for proxy nodes, receiving obfuscated traffic and routing it to the public internet.
+- **`proxy` (Relay)**: A node located in a restricted region. It does **not** provide direct internet access. Instead, it encapsulates client traffic into a stealth tunnel (Xray Reality) and forwards it to a linked `exit` node.
 
 ### 2. Autonomous Agent (Smart Installer)
-No more manual `apt-get` or Ansible for every new node.
-- **Auto-Detect**: Detects CPU arch (`x86_64`, `arm64`) and OS distribution.
-- **Self-Install**: Downloads static binaries or manages Docker sidecars automatically.
-- **Kernel-Independent**: Uses `wireguard-go` for userspace VPN if kernel modules are missing.
+The Agent is designed to be completely self-sufficient:
+- **Environment Awareness**: Detects if it's running on a bare host or inside a Docker container.
+- **Silent Provisioning**: Automatically downloads and configures the latest stable versions of `xray-core` and `wireguard-go`.
+- **Compatibility**: Works across different Linux distributions and CPU architectures (`x86_64`, `arm64`) without manual package installation.
+
+### 3. Dynamic Node Protection
+To ensure stability on cheap, low-end VPS:
+- **Load Smoothing**: Uses Exponential Moving Average (EMA) to distinguish between transient CPU spikes and sustained overloads.
+- **Automated Mitigation**: When a node is saturated, it identifies top-bandwidth consumers and moves them to a throttled queue (Penalty Box) for a cooling period.
 
 ---
 
 ## 🛠 Installation & Startup
 
 ### Local Development (Single-Host)
-
-For hacking on the codebase or running a local master/agent pair:
 
 ```bash
 # 1. Clone & Setup
@@ -56,7 +61,6 @@ cp .env.master.example .env
 kosatka-mesh master run --port 8000
 
 # 3. Run Agent (in another terminal)
-# cp .env.agent.example .env
 kosatka-mesh agent run --port 8010
 ```
 
@@ -64,75 +68,46 @@ kosatka-mesh agent run --port 8010
 
 ## 🐳 Docker Deployment (Production)
 
-The deployment is split into two compose files—one per role—so a master host and an agent host configure cleanly.
-
 ### Master Node Setup
-
 ```bash
-# Create master env and fill in secrets
 cp .env.master.example .env.master
 $EDITOR .env.master   # set KOSATKA_API_KEY, etc.
-
-# Bring up Postgres 16 + Master API
 docker compose -f docker-compose.master.yml up -d --build
 ```
-*Master listens on `:8000`. Verify with `curl http://localhost:8000/health`.*
 
 ### Agent Node Setup
-
 ```bash
 cp .env.agent.example .env.agent
 $EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, etc.
-
-# Bring up the Agent
 docker compose -f docker-compose.agent.yml up -d --build
 ```
-> [!IMPORTANT]
-> To manage VPN interfaces, the Docker container needs **NET_ADMIN** capabilities (included in the default compose file).
 
 ---
 
 ## 📖 Usage Guides
 
-### Setting up a Stealth Chain
+### Setting up a Stealth Chain (Proxy -> Exit)
 
-1. **Add the Exit node**:
+Building a stealth bridge requires two nodes with specific roles:
+
+1. **Register the Exit Node**:
+   Register a server in an unrestricted region:
    ```bash
-   kosatka-mesh nodes add "Exit-Node" "http://exit-ip:8010" --role exit
+   kosatka-mesh nodes add "Global-Exit" "http://exit-ip:8010" --role exit
    ```
 
-2. **Add the Proxy node**:
+2. **Register the Proxy Node**:
+   Register a server in a restricted region. The CLI will interactively prompt you to select an available Exit node to link with:
    ```bash
-   # CLI will interactively ask to pick an Exit node from the list
-   kosatka-mesh nodes add "Proxy-Node" "http://proxy-ip:8010" --role proxy
+   kosatka-mesh nodes add "Local-Proxy" "http://proxy-ip:8010" --role proxy
    ```
 
-3. **Provision a stealth profile**:
+3. **Provision a Stealth Client**:
+   Request a configuration for the chained pair:
    ```bash
-   kosatka-mesh nodes provision "stealth-user" --protocol "stealth-wg"
+   kosatka-mesh nodes provision "my-laptop" --protocol "stealth-wg"
    ```
-
-### Enabling Autonomous Shaping
-
-On the Agent host, set the following environment variables:
-```bash
-AGENT_SHAPING_ENABLED=true
-AGENT_SHAPING_TOTAL_RATE=100mbit
-```
-The agent will now autonomously monitor load and throttle heavy users when sustained load is detected.
-
----
-
-## 📦 SDK Integration
-
-```python
-from KosatkaMesh import MeshClient
-
-client = MeshClient(base_url="https://master.com", api_key="...")
-
-# Provision a profile with automatic trend-aware balancing
-profile = await client.provision(name="user1", protocol="amneziawg")
-```
+   *The client connects to the **Local-Proxy**, but their traffic is securely tunneled and exits through the **Global-Exit**.*
 
 ---
 

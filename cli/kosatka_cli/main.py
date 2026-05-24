@@ -1,7 +1,7 @@
 import typer
 from rich.console import Console
 
-from . import config, deploy, nodes
+from . import config, deploy, monitor, nodes
 
 app = typer.Typer(help="Kosatka Mesh CLI - Manage your global VPN mesh")
 console = Console()
@@ -11,6 +11,7 @@ agent_app = typer.Typer(help="Manage and run Kosatka Agent service")
 
 app.add_typer(nodes.app, name="nodes")
 app.add_typer(deploy.app, name="deploy")
+app.add_typer(monitor.app, name="monitor")
 app.add_typer(master_app, name="master")
 app.add_typer(agent_app, name="agent")
 

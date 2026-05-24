@@ -106,11 +106,18 @@ async def install_marzban():
 
 async def bootstrap_provider(provider_type: str):
     """Bootstrap the specified provider."""
+    # Ensure common tools
+    await ensure_apt_packages(["openssl", "curl", "ca-certificates"])
+
     if provider_type == "wireguard":
         await install_wireguard()
     elif provider_type == "awg":
         await install_amneziawg()
     elif provider_type == "xray":
         await install_xray()
+    elif provider_type in ("hysteria2", "tuic", "sing-box"):
+        # We don't have a separate install_singbox here because SmartProvisioner handles it,
+        # but we might want to ensure dependencies.
+        pass
     elif provider_type == "marzban":
         await install_marzban()

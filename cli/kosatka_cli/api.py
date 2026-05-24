@@ -65,3 +65,6 @@ class APIClient:
 
     async def get_stats(self) -> Dict[str, Any]:
         return await self.request("GET", "/stats/summary")
+
+    async def get_realtime_stats(self) -> Dict[str, Any]:
+        return await self.request("GET", "/stats/realtime")

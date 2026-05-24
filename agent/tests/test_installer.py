@@ -108,6 +108,7 @@ async def test_ensure_providers_orchestration():
 
         await provisioner.ensure_providers()
 
-        assert mock_download.call_count == 2
+        # Should now be 3: xray, wireguard-go, and sing-box
+        assert mock_download.call_count == 3
         mock_download.assert_any_call("https://example.com/bin", "xray")
         mock_download.assert_any_call("https://example.com/bin", "wireguard-go")

@@ -7,7 +7,7 @@ from kosatka_master.database import get_db
 from kosatka_master.models.client import Client
 from kosatka_master.models.node import Node
 from kosatka_master.security import get_api_key
-from kosatka_master.services.chain_manager import ChainManager
+from kosatka_master.services.chain_manager import ChainError, ChainManager
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -233,7 +233,10 @@ async def provision_client(
 
     if req.protocol.startswith("stealth-"):
         chain_manager = ChainManager(db)
-        agent_result = await chain_manager.provision_chain(client, node, req.protocol)
+        try:
+            agent_result = await chain_manager.provision_chain(client, node, req.protocol)
+        except ChainError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     else:
         agent_payload = {"external_id": req.external_id, "email": req.email}
         agent_result = await call_agent(node, "POST", "/clients", json=agent_payload)

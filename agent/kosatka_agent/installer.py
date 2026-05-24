@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import shutil
+import tarfile
 import zipfile
 
 import httpx
@@ -57,11 +58,13 @@ class SmartProvisioner:
                 file_name = f"Xray-linux-{arch}.zip"
             return f"https://github.com/XTLS/Xray-core/releases/latest/download/{file_name}"
 
+        elif provider == "sing-box":
+            # sing-box-1.9.3-linux-amd64.tar.gz
+            version = "1.9.3"
+            file_name = f"sing-box-{version}-linux-{arch}.tar.gz"
+            return f"https://github.com/SagerNet/sing-box/releases/download/v{version}/{file_name}"
+
         elif provider == "wireguard-go":
-            # Since official WireGuard/wireguard-go doesn't provide binaries,
-            # we'll use a known reliable source or a placeholder.
-            # For this task, we'll use amneziawg-go as a reference or a hypothetical mirror.
-            # Using amneziawg-go releases as they ARE available and used in bootstrap.py
             if arch == "amd64":
                 file_name = "amneziawg-go-linux-amd64"
             elif arch == "arm64":
@@ -75,7 +78,7 @@ class SmartProvisioner:
         raise ValueError(f"Unknown provider: {provider}")
 
     async def _download_and_extract(self, url: str, target_name: str):
-        """Download a file and extract if it's a zip, then move to bin_path."""
+        """Download a file and extract if it's a zip or tar.gz, then move to bin_path."""
         os.makedirs(self.bin_path, exist_ok=True)
         temp_file = os.path.join("/tmp", os.path.basename(url))
 
@@ -86,58 +89,73 @@ class SmartProvisioner:
             with open(temp_file, "wb") as f:
                 f.write(resp.content)
 
+        extract_path = os.path.join("/tmp", f"extracted_{target_name}")
+        os.makedirs(extract_path, exist_ok=True)
+
         if temp_file.endswith(".zip"):
-            extract_path = os.path.join("/tmp", f"extracted_{target_name}")
-            os.makedirs(extract_path, exist_ok=True)
             with zipfile.ZipFile(temp_file, "r") as zip_ref:
-                zip_ref.extractall(extract_path)
-
-            # Find the actual binary in the extracted files
-            source_bin = os.path.join(extract_path, target_name)
-            if not os.path.exists(source_bin):
-                # Fallback: find any executable or the first file if target_name not found
-                files = os.listdir(extract_path)
-                if files:
-                    source_bin = os.path.join(extract_path, files[0])
-
-            shutil.move(source_bin, os.path.join(self.bin_path, target_name))
-            shutil.rmtree(extract_path)
+                zip_ref.extractall(extract_path)  # nosec
+            self._move_binary(extract_path, target_name)
+        elif temp_file.endswith(".tar.gz") or temp_file.endswith(".tgz"):
+            with tarfile.open(temp_file, "r:gz") as tar_ref:
+                tar_ref.extractall(extract_path)  # nosec
+            self._move_binary(extract_path, target_name)
         else:
             shutil.move(temp_file, os.path.join(self.bin_path, target_name))
 
         if os.path.exists(temp_file):
             os.remove(temp_file)
+        if os.path.exists(extract_path):
+            shutil.rmtree(extract_path)
 
         bin_full_path = os.path.join(self.bin_path, target_name)
         os.chmod(bin_full_path, 0o755)
         logger.info(f"Successfully installed {target_name} to {bin_full_path}")
 
+    def _move_binary(self, extract_path: str, target_name: str):
+        """Find the binary in extract_path and move it to bin_path."""
+        source_bin = None
+        # Walk through extracted files to find the binary
+        for root, _, files in os.walk(extract_path):
+            if target_name in files:
+                source_bin = os.path.join(root, target_name)
+                break
+
+        if not source_bin:
+            # Fallback: find any file that matches target_name or just take the first file
+            for root, _, files in os.walk(extract_path):
+                for f in files:
+                    if target_name in f:
+                        source_bin = os.path.join(root, f)
+                        break
+                if source_bin:
+                    break
+
+        if source_bin:
+            shutil.move(source_bin, os.path.join(self.bin_path, target_name))
+        else:
+            raise RuntimeError(f"Could not find {target_name} in extracted files")
+
+    async def _ensure_binary(self, name: str, cmd: str | None = None):
+        """Ensure a specific binary is installed."""
+        check_cmd = cmd or name
+        if not shutil.which(check_cmd) and not os.path.exists(os.path.join(self.bin_path, name)):
+            try:
+                url = self._get_binary_url(name)
+                await self._download_and_extract(url, name)
+            except Exception as e:
+                logger.error(f"Failed to provision {name}: {e}")
+
     async def ensure_providers(self):
         """Orchestrate detection and download of providers."""
         logger.info(f"Ensuring providers for {self.os_info}")
 
-        # For now, we'll ensure xray if not present
-        if not shutil.which("xray") and not os.path.exists(os.path.join(self.bin_path, "xray")):
-            try:
-                url = self._get_binary_url("xray")
-                await self._download_and_extract(url, "xray")
-            except Exception as e:
-                logger.error(f"Failed to provision xray: {e}")
-
-        # Ensure wireguard-go if not present and kernel WG might be missing
-        if not shutil.which("wg") and not os.path.exists(
-            os.path.join(self.bin_path, "wireguard-go")
-        ):
-            try:
-                url = self._get_binary_url("wireguard-go")
-                await self._download_and_extract(url, "wireguard-go")
-            except Exception as e:
-                logger.error(f"Failed to provision wireguard-go: {e}")
+        await self._ensure_binary("xray")
+        await self._ensure_binary("sing-box")
+        await self._ensure_binary("wireguard-go", "wg")
 
         # Verify binaries
-        for cmd in ["xray", "wireguard-go"]:
+        for cmd in ["xray", "sing-box", "wireguard-go"]:
             full_path = os.path.join(self.bin_path, cmd)
-            if os.path.exists(full_path):
-                # We could run --version here, but some binaries might fail in certain envs (e.g. qemu)
-                # For now, existence and chmod 755 is a good start.
-                logger.info(f"Provider {cmd} is ready at {full_path}")
+            if os.path.exists(full_path) or shutil.which(cmd):
+                logger.info(f"Provider {cmd} is ready")

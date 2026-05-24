@@ -8,6 +8,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .api.v1.dashboard import router as dashboard_router
 from .api.v1.router import api_router
 from .database import Base, engine
 from .http_client import http_client_lifespan
@@ -93,6 +94,7 @@ async def download_ansible_playbooks(
 
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(dashboard_router)
 
 
 @app.get("/health")

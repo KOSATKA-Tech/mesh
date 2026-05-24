@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kosatka Mesh Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; color: #1c1e21; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #3498db; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .node-info { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .chart-container { height: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐋 Kosatka Mesh Dashboard</h1>
+        <div id="nodes-grid" class="grid">
+            <!-- Cards will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        const charts = {};
+
+        async function updateStats() {
+            const params = new URLSearchParams(window.location.search);
+            const key = params.get('key');
+            const headers = {};
+            if (key) {
+                headers['X-Kosatka-Key'] = key;
+            }
+
+            try {
+                const response = await fetch('/api/v1/stats/realtime', { headers });
+                if (!response.ok) throw new Error('Unauthorized');
+                const data = await response.json();
+                renderNodes(data.nodes);
+            } catch (err) {
+                console.error('Failed to fetch stats:', err);
+            }
+        }
+
+        function renderNodes(nodes) {
+            const grid = document.getElementById('nodes-grid');
+
+            nodes.forEach(node => {
+                let card = document.getElementById(`node-${node.id}`);
+                if (!card) {
+                    card = document.createElement('div');
+                    card.id = `node-${node.id}`;
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="node-info">
+                            <span>${node.name}</span>
+                            <span id="node-${node.id}-status">...</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="node-${node.id}-chart"></canvas>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                    initChart(node);
+                }
+                updateChart(node);
+            });
+        }
+
+        function initChart(node) {
+            const ctx = document.getElementById(`node-${node.id}-chart`).getContext('2d');
+            charts[node.id] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: node.cpu_history.map((_, i) => i),
+                    datasets: [
+                        {
+                            label: 'CPU %',
+                            data: node.cpu_history,
+                            borderColor: '#3498db',
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'RX Mbps',
+                            data: node.rx_history.map(b => (b / 1e6).toFixed(2)),
+                            borderColor: '#2ecc71',
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function updateChart(node) {
+            const chart = charts[node.id];
+            chart.data.datasets[0].data = node.cpu_history;
+            chart.data.datasets[1].data = node.rx_history.map(b => (b / 1e6).toFixed(2));
+            chart.update('none');
+            document.getElementById(`node-${node.id}-status`).innerText = `${node.cpu_history[0].toFixed(1)}% CPU`;
+        }
+
+        updateStats();
+        setInterval(updateStats, 5000);
+    </script>
+</body>
+</html>

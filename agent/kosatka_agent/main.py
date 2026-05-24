@@ -12,6 +12,7 @@ from .protector import HeavyweightProtector
 from .providers.awg import AmneziaWGProvider
 from .providers.base import BaseAgentProvider
 from .providers.marzban import MarzbanProvider
+from .providers.singbox import Hysteria2Provider, TUICProvider
 from .providers.wireguard import WireGuardProvider
 from .providers.xray import XrayProvider
 from .providers.xray_relay import XrayRelayProvider
@@ -36,6 +37,10 @@ def get_provider() -> BaseAgentProvider:
         return AmneziaWGProvider(config_path=settings.awg_config_path)
     elif settings.provider_type == "xray":
         return XrayProvider()
+    elif settings.provider_type == "hysteria2":
+        return Hysteria2Provider()
+    elif settings.provider_type == "tuic":
+        return TUICProvider()
     else:
         raise ValueError(f"Unknown provider type: {settings.provider_type}")
 

@@ -42,18 +42,21 @@ async def test_provision_chain_success(db_session: AsyncSession):
     chain_manager = ChainManager(db_session)
 
     with patch("kosatka_master.services.chain_manager._call_agent") as mock_call:
-        # Mock Exit Agent response (WireGuard config)
+        # Mock responses for the sequence of calls:
+        # 1. Exit Agent POST /clients -> returns config in POST body
+        # 2. Proxy Agent POST /relays -> returns config in POST body
         mock_call.side_effect = [
-            # First call to Exit Agent
             {"config_text": "wg-config-data", "address": "10.8.0.2", "public_key": "exit-pubkey"},
-            # Second call to Proxy Agent
-            {"status": "success", "relay_address": "proxy-ip:port"},
+            {"config_text": "relayed-config-data", "status": "success"},
         ]
 
         result = await chain_manager.provision_chain(client, proxy_node, protocol="stealth")
 
-        assert result["config_text"] == "wg-config-data"
+        # The final config should come from the first node in the chain (the Proxy)
+        assert result["config_text"] == "relayed-config-data"
         assert result["node_id"] == proxy_node.id
+        # Public key should come from the Exit node
+        assert result["public_key"] == "exit-pubkey"
 
         # Verify calls
         assert mock_call.call_count == 2

@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -18,6 +19,10 @@ class Client(Base):
     external_id: Mapped[str] = mapped_column(String(255), unique=True)
     email: Mapped[str] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sub_token: Mapped[str] = mapped_column(
+        String(100), unique=True, index=True, default=lambda: str(uuid.uuid4())
+    )
+    sub_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     # Node on which the agent actually materialised this client's peer.
     # Recorded at provision time so the master can route config/revoke
     # requests back to the right agent without relying on the caller

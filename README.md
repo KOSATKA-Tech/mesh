@@ -6,7 +6,7 @@
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 
-**KOSATKA Mesh** is a professional-grade centralized control plane for managing a global distributed VPN infrastructure through a unified API. Built for stealth, scalability, and extreme ease of use.
+**KOSATKA Mesh** is a professional-grade centralized control plane for managing a global distributed VPN infrastructure through a unified API. Built for stealth, scalability, and an effortless user experience.
 
 </div>
 
@@ -14,35 +14,35 @@
 
 ## 🚀 Key Features
 
-- **Unified CLI**: Control your entire mesh via the `kosatka-mesh` command.
-- **Stealth Chaining**: Seamless **Proxy -> Exit** topology with **Xray Reality** obfuscation to bypass DPI and censorship.
-- **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment (Docker/Host) and installs necessary binaries (Xray, WireGuard-go).
+- **Unified CLI & API**: Control your entire mesh via the `kosatka-mesh` command or a RESTful API.
+- **Universal Subscriptions**: Effortless connection on any device (iOS, Android, Windows, TV) via **Clash-compatible** dynamic configurations.
+- **Multi-Hop Stealth Chaining**: Build deep server chains (e.g., `Restricted -> Intermediate -> Exit`) with **Xray Reality** obfuscation.
+- **Modern High-Speed Protocols**: Support for **Hysteria2** and **TUIC** (QUIC-based) for lightning-fast performance even on lossy networks.
+- **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment and installs necessary binaries (**sing-box**, WireGuard).
 - **Dynamic Traffic Shaping**: Self-protecting nodes. Automatically detects and throttles "heavy hitters" to preserve performance on low-end VPS.
 - **Trend-Aware Load Balancing**: Intelligent node selection based on real-time resource utilization trends (CPU/Bandwidth).
-- **High-Performance Network**: HTTP/2 connection pooling for lightning-fast Master-Agent communication.
-- **Provider Abstraction**: Manage AmneziaWG, WireGuard, and VLESS through a single API endpoint.
+- **Protected Analytics Dashboard**: Real-time visualization of the entire network's health and load.
 
 ---
 
 ## 🏗 Architectural Features
 
-### 1. Stealth Infrastructure & Node Roles
-Kosatka Mesh introduces a powerful role-based system for building complex network topologies:
+### 1. Universal Connectivity (Clash Subscriptions)
+Kosatka Mesh acts as a subscription provider. Each client gets a unique token that provides a dynamic, self-updating configuration compatible with popular apps like **Clash Verge, Stash, Shadowrocket, and Clash Meta**.
+- **Smart Naming**: Nodes are automatically labeled with flags and country names (e.g., `🇳🇱 Netherlands [Premium]`).
+- **Auto-Selection**: Configurations include "Auto Select" groups that pick the lowest latency node automatically.
+- **Privacy**: The client config only sees entry/exit nodes; internal multi-hop topology is fully concealed.
 
-- **`standalone` (Default)**: A standard VPN node. Clients connect directly to this server, and it provides direct internet access.
-- **`exit` (Termination)**: A node located in an unrestricted region. It serves as the final "hop" for proxy nodes, receiving obfuscated traffic and routing it to the public internet.
-- **`proxy` (Relay)**: A node located in a restricted region. It does **not** provide direct internet access. Instead, it encapsulates client traffic into a stealth tunnel (Xray Reality) and forwards it to a linked `exit` node.
+### 2. Unified Transport (Sing-box Core)
+We have unified our data plane on the **sing-box** core. A single binary on the agent handles all modern protocols:
+- **Hysteria2 / TUIC**: Exceptional performance on mobile networks and unstable links.
+- **VLESS + Reality**: State-of-the-art obfuscation that makes VPN traffic indistinguishable from HTTPS to trusted domains.
+- **WireGuard**: Industry-standard high-speed VPN in userspace.
 
-### 2. Autonomous Agent (Smart Installer)
-The Agent is designed to be completely self-sufficient:
-- **Environment Awareness**: Detects if it's running on a bare host or inside a Docker container.
-- **Silent Provisioning**: Automatically downloads and configures the latest stable versions of `xray-core` and `wireguard-go`.
-- **Compatibility**: Works across different Linux distributions and CPU architectures (`x86_64`, `arm64`) without manual package installation.
-
-### 3. Dynamic Node Protection
-To ensure stability on cheap, low-end VPS:
-- **Load Smoothing**: Uses Exponential Moving Average (EMA) to distinguish between transient CPU spikes and sustained overloads.
-- **Automated Mitigation**: When a node is saturated, it identifies top-bandwidth consumers and moves them to a throttled queue (Penalty Box) for a cooling period.
+### 3. Advanced Stealth Infrastructure
+Build arbitrary length server chains to bypass censorship.
+- **Multi-Hop**: Direct traffic through multiple jurisdictions before exiting to the internet.
+- **Cycle Detection**: The Master node prevents invalid or circular topologies automatically.
 
 ---
 
@@ -86,87 +86,53 @@ docker compose -f docker-compose.agent.yml up -d --build
 
 ## 📖 Usage Guides
 
-### Setting up a Stealth Chain (Proxy -> Exit)
+### Getting a Subscription Link
 
-Building a stealth bridge requires two nodes with specific roles:
+Each client has a subscription token. You can find it in the Master DB or via the CLI (coming soon). The URL format is:
+`http://<your-master-ip>:8000/sub/<token>`
 
-1. **Register the Exit Node**:
-   Register a server in an unrestricted region:
+Simply paste this link into your favorite Clash-compatible app.
+
+### Setting up a Multi-Hop Chain
+
+1. **Register nodes**:
    ```bash
+   # Add Exit Node (EU)
    kosatka-mesh nodes add "Global-Exit" "http://exit-ip:8010" --role exit
+
+   # Add Intermediate Relay (KZ) pointing to EU
+   kosatka-mesh nodes add "Mid-Relay" "http://kz-ip:8010" --role proxy --upstream-id <EU_ID>
+
+   # Add Entry Proxy (Local) pointing to KZ
+   kosatka-mesh nodes add "Local-Entry" "http://local-ip:8010" --role proxy --upstream-id <MID_ID>
    ```
 
-2. **Register the Proxy Node**:
-   Register a server in a restricted region. The CLI will interactively prompt you to select an available Exit node to link with:
+2. **Provision**:
    ```bash
-   kosatka-mesh nodes add "Local-Proxy" "http://proxy-ip:8010" --role proxy
+   kosatka-mesh nodes provision "stealth-user" --protocol "stealth-wg"
    ```
-
-3. **Provision a Stealth Client**:
-   Request a configuration for the chained pair:
-   ```bash
-   kosatka-mesh nodes provision "my-laptop" --protocol "stealth-wg"
-   ```
-   *The client connects to the **Local-Proxy**, but their traffic is securely tunneled and exits through the **Global-Exit**.*
 
 ---
 
 ## 📦 SDK Integration (e.g., for Telegram Bots)
-
-The `kosatka-sdk` is designed for seamless integration into third-party applications like subscription management bots.
-
-### Integration Example
-
-Here is how you can manage VPN subscriptions programmatically in your Python project:
 
 ```python
 import asyncio
 from KosatkaMesh import MeshClient
 
 async def main():
-    # Initialize the client pointing to your Master Node
-    client = MeshClient(
-        base_url="https://your-master-domain.com",
-        api_key="your-master-admin-key"
-    )
+    client = MeshClient(base_url="https://master.com", api_key="...")
 
-    # 1. List available locations (nodes)
-    nodes = await client.list_nodes()
-    for node in nodes:
-        print(f"Node: {node.name} | Load: {node.current_clients}/{node.max_clients}")
+    # 1. Provision a profile
+    profile = await client.provision(name="user_1", protocol="hysteria2")
 
-    # 2. Provision a new VPN profile
-    # This automatically selects the best available node supporting the protocol
-    # Trend-aware load balancing is handled by the Master node.
-    profile = await client.provision(
-        name="user_12345",
-        protocol="amneziawg"
-    )
-
-    print(f"Profile created on Node ID: {profile.node_id}")
-    print(f"VPN Config:\n{profile.config_text}")
-
-    # 3. Revoke access
-    await client.revoke(profile.client_id)
+    # 2. Get the universal subscription link for this client
+    # (Assuming you have the client object or external_id)
+    sub_url = f"https://master.com/sub/{profile.sub_token}"
+    print(f"Send this to the user: {sub_url}")
 
 if __name__ == "__main__":
     asyncio.run(main())
-```
-
-### Webhook Handling
-
-For real-time updates (e.g., notifying a user when their subscription is about to expire), you can use the built-in webhook utility:
-
-```python
-from KosatkaMesh.webhook import KosatkaWebhookHandler
-
-webhook = KosatkaWebhookHandler(secret="your-webhook-secret")
-
-@webhook.on("subscription_expired")
-async def handle_expiry(event):
-    # event.data contains the metadata you provided during provisioning
-    external_id = event.data.get("external_id")
-    print(f"Notifying user {external_id} that their access was revoked.")
 ```
 
 ---

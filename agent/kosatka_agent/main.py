@@ -12,7 +12,7 @@ from .protector import HeavyweightProtector
 from .providers.awg import AmneziaWGProvider
 from .providers.base import BaseAgentProvider
 from .providers.marzban import MarzbanProvider
-from .providers.singbox import Hysteria2Provider, TUICProvider
+from .providers.singbox import SingboxProvider
 from .providers.wireguard import WireGuardProvider
 from .providers.xray import XrayProvider
 from .providers.xray_relay import XrayRelayProvider
@@ -37,10 +37,8 @@ def get_provider() -> BaseAgentProvider:
         return AmneziaWGProvider(config_path=settings.awg_config_path)
     elif settings.provider_type == "xray":
         return XrayProvider()
-    elif settings.provider_type == "hysteria2":
-        return Hysteria2Provider()
-    elif settings.provider_type == "tuic":
-        return TUICProvider()
+    elif settings.provider_type in ("sing-box", "hysteria2", "tuic"):
+        return SingboxProvider()
     else:
         raise ValueError(f"Unknown provider type: {settings.provider_type}")
 
@@ -71,10 +69,12 @@ async def _bootstrap_node():
 
     try:
         await bootstrap_provider(settings.provider_type)
-        # For WG/AWG, we also want to ensure the interface is up
-        if settings.provider_type in ("wireguard", "awg"):
+        # For WG/AWG/Sing-box, we also want to ensure the interface/service is up
+        if settings.provider_type in ("wireguard", "awg", "sing-box", "hysteria2", "tuic"):
             if hasattr(provider, "_ensure_server"):
                 await provider._ensure_server()
+            elif hasattr(provider, "_ensure_bootstrapped"):
+                await provider._ensure_bootstrapped()
         logger.info("Bootstrapping completed successfully")
     except Exception as exc:
         logger.error(f"Failed to bootstrap provider {settings.provider_type}: {exc}")

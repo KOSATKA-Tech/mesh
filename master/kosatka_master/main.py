@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .api.v1.dashboard import router as dashboard_router
 from .api.v1.router import api_router
+from .api.v1.subscriptions import public_router as subscriptions_public_router
 from .database import Base, engine
 from .http_client import http_client_lifespan
 from .scheduler import scheduler, setup_scheduler
@@ -94,6 +95,7 @@ async def download_ansible_playbooks(
 
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(subscriptions_public_router, prefix="/sub")
 app.include_router(dashboard_router)
 
 

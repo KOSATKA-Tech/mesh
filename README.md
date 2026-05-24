@@ -29,7 +29,7 @@
 ### 1. Stealth Infrastructure
 Kosatka Mesh supports server-to-server chaining. You can register a node in a restricted region as a **Proxy** and link it to an **Exit** node in an unrestricted region.
 - **Transport**: VLESS + Reality (Xray-core).
-- **Visibility**: Traffic between nodes is indistinguishable from standard HTTPS traffic to trusted domains (e.g., Microsoft, Google).
+- **Visibility**: Traffic between nodes is indistinguishable from standard HTTPS traffic to trusted domains.
 
 ### 2. Autonomous Agent (Smart Installer)
 No more manual `apt-get` or Ansible for every new node.
@@ -37,31 +37,58 @@ No more manual `apt-get` or Ansible for every new node.
 - **Self-Install**: Downloads static binaries or manages Docker sidecars automatically.
 - **Kernel-Independent**: Uses `wireguard-go` for userspace VPN if kernel modules are missing.
 
-### 3. Dynamic Node Protection
-Protects low-resource (e.g., 512MB RAM / 1-CPU) nodes from being saturated by single users.
-- **EMA Smoothing**: Monitors CPU/BW with Exponential Moving Average to ignore transient spikes.
-- **Penalty Box**: Active consumers are moved to a throttled class for a short cooling period if the node is under sustained high load.
+---
+
+## 🛠 Installation & Startup
+
+### Local Development (Single-Host)
+
+For hacking on the codebase or running a local master/agent pair:
+
+```bash
+# 1. Clone & Setup
+git clone https://github.com/6dba/mesh.git && cd mesh
+uv venv && source .venv/bin/activate
+uv pip install -e .
+
+# 2. Run Master
+cp .env.master.example .env
+kosatka-mesh master run --port 8000
+
+# 3. Run Agent (in another terminal)
+# cp .env.agent.example .env
+kosatka-mesh agent run --port 8010
+```
 
 ---
 
-## 🛠 Installation (local development)
+## 🐳 Docker Deployment (Production)
+
+The deployment is split into two compose files—one per role—so a master host and an agent host configure cleanly.
+
+### Master Node Setup
 
 ```bash
-# 1. Clone
-git clone https://github.com/6dba/mesh.git
-cd mesh
+# Create master env and fill in secrets
+cp .env.master.example .env.master
+$EDITOR .env.master   # set KOSATKA_API_KEY, etc.
 
-# 2. Create + activate a venv
-uv venv
-source .venv/bin/activate
-
-# 3. Install the workspace
-uv pip install -e .
-
-# 4. Configure & Run
-cp .env.master.example .env
-kosatka-mesh master run --port 8000
+# Bring up Postgres 16 + Master API
+docker compose -f docker-compose.master.yml up -d --build
 ```
+*Master listens on `:8000`. Verify with `curl http://localhost:8000/health`.*
+
+### Agent Node Setup
+
+```bash
+cp .env.agent.example .env.agent
+$EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, etc.
+
+# Bring up the Agent
+docker compose -f docker-compose.agent.yml up -d --build
+```
+> [!IMPORTANT]
+> To manage VPN interfaces, the Docker container needs **NET_ADMIN** capabilities (included in the default compose file).
 
 ---
 
@@ -84,7 +111,6 @@ kosatka-mesh master run --port 8000
    ```bash
    kosatka-mesh nodes provision "stealth-user" --protocol "stealth-wg"
    ```
-   *The client gets a config pointing to the Proxy node, but traffic exits through the Exit node.*
 
 ### Enabling Autonomous Shaping
 
@@ -115,7 +141,6 @@ profile = await client.provision(name="user1", protocol="amneziawg")
 - [Architecture Overview](docs/architecture.md)
 - [API Reference](docs/api-reference.md)
 - [CLI Reference](docs/cli.md)
-- [Stealth Chaining Spec](docs/superpowers/specs/2026-05-24-stealth-chaining-auto-install.md)
 
 ## ⚖️ License
 

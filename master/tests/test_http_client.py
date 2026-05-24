@@ -14,11 +14,9 @@ async def test_global_client_is_singleton():
 @pytest.mark.asyncio
 async def test_global_client_config():
     client = await get_global_httpx_client()
-    # Check if http2 is enabled. In httpx, it's checked via the _transport.
-    # For AsyncClient, it usually uses AsyncHTTPTransport.
-    # We can check the client.limits and other attributes.
-    assert client.limits.max_connections == 100
-    assert client.limits.max_keepalive_connections == 20
+    # Check limits via internal _transport attributes in httpx 0.28+
+    assert client._transport._pool._max_connections == 100
+    assert client._transport._pool._max_keepalive_connections == 20
     assert client.timeout.connect == 10.0
     assert client.timeout.read == 10.0
 

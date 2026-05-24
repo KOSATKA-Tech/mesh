@@ -32,7 +32,7 @@ class APIClient:
             return response.json()
 
     async def list_nodes(self) -> List[Dict[str, Any]]:
-        return await self.request("GET", "/nodes/")
+        return await self.request("GET", "/nodes")
 
     async def register_node(
         self, name: str, address: str, provider_type: str = "agent", api_key: str | None = None
@@ -43,14 +43,14 @@ class APIClient:
             "provider_type": provider_type,
             "api_key": api_key,
         }
-        return await self.request("POST", "/nodes/", json=data)
+        return await self.request("POST", "/nodes", json=data)
 
     async def provision_client(self, external_id: str, protocol: str) -> Dict[str, Any]:
         data = {"external_id": external_id, "protocol": protocol}
-        return await self.request("POST", "/clients/provision/", json=data)
+        return await self.request("POST", "/clients/provision", json=data)
 
     async def get_node_health(self, node_id: int) -> Dict[str, Any]:
-        return await self.request("GET", f"/nodes/{node_id}/health/")
+        return await self.request("GET", f"/nodes/{node_id}/health")
 
     async def get_stats(self) -> Dict[str, Any]:
-        return await self.request("GET", "/stats/summary/")
+        return await self.request("GET", "/stats/summary")

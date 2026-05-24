@@ -21,7 +21,9 @@ def test_register_node_success():
         # register_node now accepts an optional api_key (defaults to None)
         # so the agent's inbound API token can be registered at the same
         # time as the node row.
-        mock_client.register_node.assert_called_once_with("MyNode", "1.2.3.4", "wireguard", None)
+        mock_client.register_node.assert_called_once_with(
+            "MyNode", "http://1.2.3.4", "wireguard", None
+        )
 
 
 def test_register_node_failure():

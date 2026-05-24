@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     # AWG and vanilla WG side-by-side in the future without key collisions.
     wg_server_info_path: str = "/opt/kosatka/agent/wg_server.json"
 
+    # Shaping settings
+    shaping_enabled: bool = False
+    shaping_total_rate: str = "1gbit"  # Total interface bandwidth
+
     # Pydantic-settings reads AGENT_*-prefixed env vars so agent.env can cleanly
     # coexist with other services on the same host.
     model_config = SettingsConfigDict(

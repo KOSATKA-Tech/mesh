@@ -7,49 +7,12 @@ from pathlib import Path
 from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import text
 
 from .api.v1.router import api_router
 from .database import Base, engine
+from .http_client import http_client_lifespan
 from .scheduler import scheduler, setup_scheduler
 from .security import get_api_key
-
-# Columns added to existing tables by recent feature work. `create_all`
-# only creates missing tables — it cannot `ALTER TABLE … ADD COLUMN` on
-# tables that already exist, so deployments that predate these columns
-# would otherwise hit "no such column: nodes.api_key" on every SELECT.
-# Until Alembic is in place, run an idempotent ADD COLUMN on startup.
-_LIGHTWEIGHT_MIGRATIONS: list[tuple[str, str, str]] = [
-    ("nodes", "api_key", "VARCHAR(255)"),
-]
-
-
-async def _apply_lightweight_migrations() -> None:
-    """Add columns that were introduced after the first deployment.
-
-    Supports both SQLite (``PRAGMA table_info``) and Postgres
-    (``information_schema``) so the same code path works for the new
-    ``docker-compose.master.yml`` Postgres deployment and for local
-    ``sqlite+aiosqlite`` development.
-    """
-    dialect = engine.dialect.name  # 'sqlite' | 'postgresql' | ...
-    async with engine.begin() as conn:
-        for table, column, sql_type in _LIGHTWEIGHT_MIGRATIONS:
-            if dialect == "sqlite":
-                result = await conn.exec_driver_sql(f"PRAGMA table_info({table})")
-                existing_columns = {row[1] for row in result.fetchall()}
-            else:
-                # Scope the lookup to the ``public`` schema so we don't
-                # falsely "find" the column on a same-named table living
-                # in pg_catalog / information_schema / a user schema and
-                # silently skip the migration on the real ``public.<table>``.
-                result = await conn.exec_driver_sql(
-                    "SELECT column_name FROM information_schema.columns "
-                    f"WHERE table_schema = 'public' AND table_name = '{table}'"
-                )
-                existing_columns = {row[0] for row in result.fetchall()}
-            if column not in existing_columns:
-                await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type}"))
 
 
 @asynccontextmanager
@@ -59,16 +22,15 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    await _apply_lightweight_migrations()
-
     # setup_scheduler() registers sync_nodes_job + check_expirations_job
     # and calls scheduler.start() internally. Calling scheduler.start() here
     # directly would leave the scheduler jobless.
     setup_scheduler()
-    try:
-        yield
-    finally:
-        scheduler.shutdown()
+    async with http_client_lifespan():
+        try:
+            yield
+        finally:
+            scheduler.shutdown()
 
 
 app = FastAPI(title="Kosatka Mesh Master", lifespan=lifespan)

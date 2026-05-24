@@ -6,12 +6,15 @@ from fastapi import Depends, FastAPI, HTTPException
 
 from .config import settings
 from .docs import router as docs_router
+from .metrics import MetricsCollector
+from .protector import HeavyweightProtector
 from .providers.awg import AmneziaWGProvider
 from .providers.base import BaseAgentProvider
 from .providers.marzban import MarzbanProvider
 from .providers.wireguard import WireGuardProvider
 from .providers.xray import XrayProvider
 from .security import get_api_key
+from .shaper import TrafficShaper
 
 # Configure logging to ensure it shows up in uvicorn
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -38,12 +41,29 @@ def get_provider() -> BaseAgentProvider:
 # Initialize provider
 provider = get_provider()
 
+# Initialize metrics collector
+metrics_collector = MetricsCollector()
+
+# Initialize shaper
+shaper = TrafficShaper(settings.wg_interface, settings.shaping_total_rate)
+
+# Initialize protector
+protector = HeavyweightProtector(shaper, provider, metrics_collector)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup logic
     logger.info(f"Starting Kosatka Agent. Provider: {settings.provider_type}")
     from .bootstrap import bootstrap_provider
+
+    # Start metrics collector
+    metrics_collector.start()
+
+    # Start shaper and protector if enabled
+    if settings.shaping_enabled:
+        await shaper.setup_shaping()
+        protector.start()
 
     try:
         await bootstrap_provider(settings.provider_type)
@@ -56,8 +76,12 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to bootstrap provider {settings.provider_type}: {exc}")
 
     yield
-    # Shutdown logic (optional)
+    # Shutdown logic
     logger.info("Kosatka Agent shutting down")
+    await protector.stop()
+    if settings.shaping_enabled:
+        await shaper.cleanup_shaping()
+    await metrics_collector.stop()
 
 
 app = FastAPI(title="Kosatka Mesh Agent", lifespan=lifespan)
@@ -68,7 +92,11 @@ app.include_router(docs_router)
 
 @app.get("/health/")
 async def health():
-    return {"status": "ok", "provider": settings.provider_type}
+    return {
+        "status": "ok",
+        "provider": settings.provider_type,
+        "metrics": metrics_collector.get_smoothed_metrics(),
+    }
 
 
 @app.get("/clients", dependencies=[Depends(get_api_key)])

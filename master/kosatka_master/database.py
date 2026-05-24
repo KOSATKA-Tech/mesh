@@ -12,8 +12,9 @@ class Base(DeclarativeBase):
 
 # Import all models to ensure they are registered with Base.metadata
 from .models.client import Client  # noqa: F401, E402
+from .models.event import Event  # noqa: F401, E402
 from .models.node import Node  # noqa: F401, E402
-from .models.routing import RoutingPolicy  # noqa: F401, E402
+from .models.routing import ClientRoutingProfile, GeositeEntry, RoutingPolicy  # noqa: F401, E402
 from .models.subscription import Subscription  # noqa: F401, E402
 
 

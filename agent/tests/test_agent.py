@@ -17,7 +17,12 @@ async def test_health(client):
     # Now that we use trailing slashes, /health/ is the canonical URL
     response = await client.get("/health/")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "metrics" in data
+    assert "cpu_usage_percent" in data["metrics"]
+    assert "rx_bps" in data["metrics"]
+    assert "tx_bps" in data["metrics"]
 
 
 @pytest.mark.asyncio

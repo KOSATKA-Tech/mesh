@@ -31,13 +31,15 @@ class AmneziaWGProvider(BaseAgentProvider):
         self.server_info_path = settings.awg_server_info_path
         self.lock = asyncio.Lock()
 
-    def _server(self) -> wg.ServerInfo:
+    async def _ensure_server(self) -> wg.ServerInfo:
         server = wg.load_server_info(self.server_info_path)
-        if server is None:
-            raise RuntimeError(
-                f"AWG server info missing at {self.server_info_path}; "
-                "run the ansible `awg` role on this node first."
+        is_up = await wg.interface_exists(self.interface)
+
+        if server is None or not is_up:
+            logger.info(
+                f"AWG server status: info={server is not None}, interface_up={is_up}. Bootstrapping/re-upping..."
             )
+            return await wg.bootstrap_server(CMD, self.server_info_path, self.interface)
         return server
 
     async def get_clients(self) -> List[Dict[str, Any]]:
@@ -69,8 +71,9 @@ class AmneziaWGProvider(BaseAgentProvider):
             if client_id in state.peers:
                 # Idempotent: return existing peer as-is.
                 peer = state.peers[client_id]
+                server = await self._ensure_server()
             else:
-                server = self._server()
+                server = await self._ensure_server()
                 private_key, public_key = await wg.generate_keypair(CMD)
                 preshared_key = await wg.generate_preshared_key(CMD)
                 address = wg.next_free_address(server.subnet, state)
@@ -86,7 +89,6 @@ class AmneziaWGProvider(BaseAgentProvider):
                 await wg.save_running_config(CMD, self.interface)
                 wg.save_state(self.state_path, state)
 
-            server = self._server()
             config_text = wg.render_client_config(peer, server, awg_params=server.awg_params)
             return {
                 "id": peer.client_id,
@@ -117,7 +119,7 @@ class AmneziaWGProvider(BaseAgentProvider):
         peer = state.peers.get(str(client_id))
         if peer is None:
             return ""
-        server = self._server()
+        server = await self._ensure_server()
         return wg.render_client_config(peer, server, awg_params=server.awg_params)
 
     async def get_client_stats(self, client_id: str) -> Dict[str, Any]:

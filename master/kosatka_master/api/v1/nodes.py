@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -37,6 +38,15 @@ class NodeCreate(BaseModel):
 async def get_nodes(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Node))
     return result.scalars().all()
+
+
+@router.get("/{node_id}", response_model=NodeSchema)
+async def get_node(node_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Node).where(Node.id == node_id))
+    node = result.scalar_one_or_none()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return node
 
 
 @router.post("/", response_model=NodeSchema)
@@ -87,7 +97,7 @@ async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
     return {"status": "success"}
 
 
-@router.get("/{node_id}/health")
+@router.get("/{node_id}/health/")
 async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """Probe agent health live. The SDK and CLI both call this endpoint."""
     result = await db.execute(select(Node).where(Node.id == node_id))
@@ -97,11 +107,24 @@ async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> D
 
     key = node.api_key or settings.effective_agent_api_key()
     provider = AgentNodeProvider(key)
-    is_up = await provider.sync_node(node.address)
+    health_data = await provider.sync_node(node.address)
+
+    is_up = health_data is not None
+    if is_up:
+        node.status = "online"
+        if health_data.get("provider"):
+            node.provider_type = health_data["provider"]
+    else:
+        node.status = "offline"
+
+    node.last_seen = datetime.now(timezone.utc).replace(tzinfo=None)
+    await db.commit()
+    await db.refresh(node)
+
     return {
         "id": node.id,
         "name": node.name,
         "address": node.address,
-        "status": "online" if is_up else "offline",
+        "status": node.status,
         "provider_type": node.provider_type,
     }

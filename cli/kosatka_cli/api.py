@@ -8,17 +8,25 @@ from .config import load_config
 class APIClient:
     def __init__(self):
         self.config = load_config()
+        if self.config.base_url and "://" not in self.config.base_url:
+            self.config.base_url = f"http://{self.config.base_url}"
+
         self.headers = {
-            "X-Kosatka-Key": self.config.api_key,
             "Content-Type": "application/json",
         }
+        if self.config.api_key:
+            self.headers["X-Kosatka-Key"] = self.config.api_key
 
     def _get_url(self, path: str) -> str:
         return f"{self.config.base_url.rstrip('/')}/api/v1{path}"
 
     async def request(self, method: str, path: str, **kwargs) -> Any:
+        if not self.headers.get("X-Kosatka-Key"):
+            raise ValueError(
+                "No API key found. Please login first using: kosatka-mesh login <your-master-key>"
+            )
         url = self._get_url(path)
-        async with httpx.AsyncClient(headers=self.headers) as client:
+        async with httpx.AsyncClient(headers=self.headers, follow_redirects=True) as client:
             response = await client.request(method, url, timeout=10.0, **kwargs)
             response.raise_for_status()
             return response.json()

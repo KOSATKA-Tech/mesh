@@ -14,15 +14,19 @@ class Config(BaseModel):
 
 
 def load_config() -> Config:
-    if not CONFIG_FILE.exists():
-        return Config()
+    config = Config()
+    if CONFIG_FILE.exists():
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                data = json.load(f)
+                config = Config(**data)
+        except Exception:
+            pass
 
-    try:
-        with open(CONFIG_FILE, "r") as f:
-            data = json.load(f)
-            return Config(**data)
-    except Exception:
-        return Config()
+    if config.base_url and "://" not in config.base_url:
+        config.base_url = f"http://{config.base_url}"
+
+    return config
 
 
 def save_config(config: Config):

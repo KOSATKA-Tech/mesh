@@ -5,6 +5,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from kosatka_master.config import settings
 from kosatka_master.database import get_db
+from kosatka_master.http_client import get_global_httpx_client
 from kosatka_master.models.client import Client
 from kosatka_master.models.node import Node
 from kosatka_master.security import get_api_key
@@ -90,6 +91,50 @@ async def delete_client(client_id: int, db: AsyncSession = Depends(get_db)):
     return {"status": "success"}
 
 
+async def _calculate_node_score(db: AsyncSession, node: Node) -> float:
+    """Calculate a load-aware score for a node. Lower is better."""
+    from kosatka_master.models.client import Client
+    from kosatka_master.models.node import NodeStat
+    from sqlalchemy import func
+
+    # Base score: active clients on this node
+    client_count_q = await db.execute(
+        select(func.count(Client.id)).where(Client.node_id == node.id, Client.is_active.is_(True))
+    )
+    base_score = client_count_q.scalar() or 0
+
+    # Fetch last 5 stats
+    stats_q = await db.execute(
+        select(NodeStat)
+        .where(NodeStat.node_id == node.id)
+        .order_by(NodeStat.timestamp.desc())
+        .limit(5)
+    )
+    stats = stats_q.scalars().all()  # stats[0] is newest
+
+    score = float(base_score)
+
+    if stats:
+        latest = stats[0]
+        # Saturation Penalty
+        # CPU > 70
+        if latest.cpu_ema > 70:
+            score += 100
+        # RX > 80% of 100Mbps (80,000,000 bps)
+        if latest.rx_bps > 80_000_000:
+            score += 100
+
+        # Trend Penalty (compare backwards: stats[i] vs stats[i+1])
+        # i=0 (newest), i=4 (oldest)
+        for i in range(len(stats) - 1):
+            # If increasing towards the present
+            if stats[i].cpu_ema > stats[i + 1].cpu_ema:
+                score += 2
+            if stats[i].rx_bps > stats[i + 1].rx_bps:
+                score += 2
+    return score
+
+
 async def _pick_node(db: AsyncSession, protocol: str, node_id: Optional[int]) -> Node:
     if node_id is not None:
         # Pinned node_id still has to be active + speaking the right provider;
@@ -112,16 +157,31 @@ async def _pick_node(db: AsyncSession, protocol: str, node_id: Optional[int]) ->
             )
         return node
 
+    # Task 6: Trend-aware Load Balancing
+    # 1. Fetch all active nodes for this protocol
     q = await db.execute(
-        select(Node).where(Node.is_active.is_(True), Node.provider_type == protocol).limit(1)
+        select(Node).where(Node.is_active.is_(True), Node.provider_type == protocol)
     )
-    node = q.scalar_one_or_none()
-    if node is None:
+    nodes = q.scalars().all()
+
+    if not nodes:
         raise HTTPException(
             status_code=503,
             detail=f"No active nodes available for provider_type={protocol!r}",
         )
-    return node
+
+    if len(nodes) == 1:
+        return nodes[0]
+
+    # 2. Calculate scores
+    node_scores = []
+    for node in nodes:
+        score = await _calculate_node_score(db, node)
+        node_scores.append((score, node))
+
+    # Pick node with lowest score
+    node_scores.sort(key=lambda x: x[0])
+    return node_scores[0][1]
 
 
 async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict[str, Any]:
@@ -129,10 +189,13 @@ async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict
     # Use the node's specific key if set; fall back to the global key.
     # This allows per-node rotation.
     key = node.api_key or settings.effective_agent_api_key()
-    headers = {"X-Kosatka-Key": key}
+    headers = {}
+    if key:
+        headers["X-Kosatka-Key"] = key
+
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.request(method, url, headers=headers, **kwargs)
+        client = await get_global_httpx_client()
+        resp = await client.request(method, url, headers=headers, **kwargs)
     except httpx.HTTPError as exc:
         # ConnectError / TimeoutException / etc. — translate to a clean 502
         # instead of leaking the raw traceback as a 500.
@@ -148,7 +211,7 @@ async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict
     return resp.json()
 
 
-@router.post("/provision", response_model=ClientProvisionResponse)
+@router.post("/provision/", response_model=ClientProvisionResponse)
 async def provision_client(
     req: ClientProvisionRequest, db: AsyncSession = Depends(get_db)
 ) -> ClientProvisionResponse:
@@ -175,6 +238,20 @@ async def provision_client(
         client.email = req.email
         await db.commit()
         await db.refresh(client)
+
+    # Production check: ensure client has an active subscription
+    from ...models.subscription import Subscription
+
+    sub_res = await db.execute(
+        select(Subscription).where(
+            Subscription.client_id == client.id, Subscription.is_active.is_(True)
+        )
+    )
+    if not sub_res.scalar_one_or_none():
+        raise HTTPException(
+            status_code=403,
+            detail=f"Client {req.external_id} has no active subscription. Cannot provision.",
+        )
 
     node = await _pick_node(db, req.protocol, req.node_id)
 

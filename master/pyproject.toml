@@ -17,6 +17,7 @@ dependencies = [
     "pydantic-settings",
     "apscheduler",
     "httpx",
+    "h2",
     "cryptography",
     "python-jose[cryptography]",
     "python-multipart",

@@ -177,6 +177,102 @@ def render_client_config(
     return "\n".join(lines) + "\n"
 
 
+async def interface_exists(interface: str) -> bool:
+    """Check if a network interface exists in the system."""
+    try:
+        await run(["ip", "link", "show", interface])
+        return True
+    except (RuntimeError, FileNotFoundError):
+        return False
+
+
+async def bootstrap_server(  # noqa: C901
+    cmd_prefix: str,
+    server_info_path: str,
+    interface: str,
+    subnet: str = "10.8.0.0/24",
+    port: int = 51820,
+) -> ServerInfo:
+    """Fully bootstrap a WG/AWG server: install, gen keys, get IP, write conf, start."""
+    from ..bootstrap import bootstrap_provider, get_public_ip
+
+    # 1. Ensure tools are installed
+    await bootstrap_provider(cmd_prefix)
+
+    # 2. Check if we already have server info and config
+    server = load_server_info(server_info_path)
+    conf_dir = "/etc/amnezia/amneziawg" if cmd_prefix == "awg" else "/etc/wireguard"
+    conf_path = Path(conf_dir) / f"{interface}.conf"
+
+    if server and conf_path.exists():
+        logger.info(f"Server info and config exist, attempting to bring up {interface}...")
+        try:
+            await run([f"{cmd_prefix}-quick", "up", interface])
+        except RuntimeError as exc:
+            if "already exists" in str(exc):
+                logger.info(f"Interface {interface} already up")
+            else:
+                raise
+        return server
+
+    # 3. Generate new setup if something is missing
+    logger.info(f"Creating new {cmd_prefix} server setup...")
+    privkey, pubkey = await generate_keypair(cmd_prefix)
+    ip = await get_public_ip()
+    endpoint = f"{ip}:{port}"
+
+    awg_params = {}
+    if cmd_prefix == "awg":
+        awg_params = {
+            "Jc": 4,
+            "Jmin": 40,
+            "Jmax": 70,
+            "S1": 15,
+            "S2": 24,
+            "H1": 1,
+            "H2": 2,
+            "H3": 3,
+            "H4": 4,
+        }
+
+    server = ServerInfo(public_key=pubkey, endpoint=endpoint, subnet=subnet, awg_params=awg_params)
+
+    # 4. Generate and save wg0.conf
+    os.makedirs(conf_dir, exist_ok=True)
+    conf_lines = [
+        "[Interface]",
+        f"PrivateKey = {privkey}",
+        f"Address = {ipaddress.ip_network(subnet)[1]}/24",
+        f"ListenPort = {port}",
+    ]
+    for k, v in awg_params.items():
+        conf_lines.append(f"{k} = {v}")
+
+    conf_path.write_text("\n".join(conf_lines) + "\n")
+
+    # 5. Bring up the interface
+    try:
+        await run([f"{cmd_prefix}-quick", "up", interface])
+    except RuntimeError as exc:
+        if "already exists" in str(exc):
+            logger.info(f"Interface {interface} already up")
+        else:
+            if conf_path.exists():
+                conf_path.unlink()
+            raise
+
+    # 6. Save server info ONLY if interface is up
+    save_server_info(server_info_path, server)
+    return server
+
+
+def save_server_info(path: str, server: ServerInfo) -> None:
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    data = asdict(server)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
 async def apply_peer(cmd_prefix: str, interface: str, peer: Peer) -> None:
     await run(
         [

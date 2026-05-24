@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 
@@ -22,3 +22,20 @@ class Node(Base):
     last_seen: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
+
+    stats: Mapped[list["NodeStat"]] = relationship(
+        back_populates="node", cascade="all, delete-orphan"
+    )
+
+
+class NodeStat(Base):
+    __tablename__ = "node_stats"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    node_id: Mapped[int] = mapped_column(ForeignKey("nodes.id"))
+    cpu_ema: Mapped[float] = mapped_column(Float)
+    rx_bps: Mapped[float] = mapped_column(Float)
+    tx_bps: Mapped[float] = mapped_column(Float)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+
+    node: Mapped["Node"] = relationship(back_populates="stats")

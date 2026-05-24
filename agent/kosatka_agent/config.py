@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    api_key: str = "change-me-agent"
+    api_key: str | None = None
     provider_type: str = "wireguard"  # awg | wireguard | marzban | xray
 
     # Provider specific settings
@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     # Written by ansible/roles/wireguard. Separate file so a node can host
     # AWG and vanilla WG side-by-side in the future without key collisions.
     wg_server_info_path: str = "/opt/kosatka/agent/wg_server.json"
+
+    # Shaping settings
+    shaping_enabled: bool = False
+    shaping_total_rate: str = "1gbit"  # Total interface bandwidth
 
     # Pydantic-settings reads AGENT_*-prefixed env vars so agent.env can cleanly
     # coexist with other services on the same host.

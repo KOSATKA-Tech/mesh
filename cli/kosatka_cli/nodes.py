@@ -56,9 +56,11 @@ def register_node(
     name: str = typer.Argument(..., help="Name of the node"),
     address: str = typer.Argument(..., help="IP or hostname of the node"),
     provider: str = typer.Option("agent", help="Provider type (agent, wireguard, etc.)"),
-    api_key: str = typer.Option(None, "--api-key", "-k", help="API key for the agent"),
+    api_key: str = typer.Option(None, "--api-key", "--key", "-k", help="API key for the agent"),
 ):
     """Register a new node"""
+    if "://" not in address:
+        address = f"http://{address}"
     asyncio.run(_register(name, address, provider, api_key))
 
 

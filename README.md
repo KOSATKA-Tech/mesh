@@ -58,7 +58,7 @@ works out of the box without `mkdir data` first.
 
 ---
 
-## 🐋 Docker deployment (recommended for production)
+## Docker deployment (recommended for production)
 
 The deployment is split into two compose files — one per role — so a
 master host and an agent host configure cleanly without overlapping
@@ -89,6 +89,8 @@ curl -s http://localhost:8000/health   # → {"status":"ok"}
 
 ### Agent host
 
+#### Option A: Docker (recommended)
+
 ```bash
 git clone https://github.com/6dba/mesh.git
 cd mesh
@@ -99,12 +101,29 @@ $EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, KOSATKA_API_KEY
 docker compose -f docker-compose.agent.yml up -d --build
 ```
 
+> [!IMPORTANT]
+> To manage VPN interfaces, the Docker container needs **NET_ADMIN** capabilities. If you encounter `Operation not permitted` errors, ensure `cap_add: [NET_ADMIN]` is in your compose file or use `privileged: true`.
+
+#### Option B: Native installation (via uv)
+
+If Docker networking is restricted on your host, you can run the agent natively:
+
+```bash
+# 1. Install uv if not present
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. Install kosatka-mesh tool
+uv tool install . --editable  # run from repo root
+
+# 3. Configure .env.agent and run (requires sudo for networking)
+sudo kosatka-mesh agent run --port 8010
+```
+
 The agent listens on `:8010`. Then, from any host that can reach both:
 
 ```bash
 kosatka-mesh login <master-api-key> --base-url https://your-master-domain
-kosatka-mesh nodes add --name "Germany-01" \
-    --url "http://<agent-ip>:8010" --key "<agent-api-key>"
+kosatka-mesh nodes add "Germany-01" "http://<agent-ip>:8010" --api-key "<agent-api-key>"
 ```
 
 After registration, the master starts polling the agent's capabilities and you can provision profiles via `kosatka-mesh nodes provision ...`.
@@ -127,7 +146,7 @@ Once the node is registered, creating a VPN profile is seamless. You don't need 
 **Via CLI**:
 ```bash
 # This will find the best node, create a profile, and return the config
-kosatka-mesh nodes provision --name "user-laptop" --protocol "amneziawg"
+kosatka-mesh nodes provision "user-laptop" --protocol "amneziawg"
 ```
 
 **Via Python SDK**:
@@ -206,7 +225,7 @@ async def handle_expiry(event):
 
 ---
 
-## 🏗 Supported VPN Providers
+## Supported VPN Providers
 
 KOSATKA Mesh can manage the following services on any node:
 - **AmneziaWG**: Modern, obfuscated WireGuard fork.

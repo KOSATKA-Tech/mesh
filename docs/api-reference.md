@@ -3,7 +3,7 @@
 The KOSATKA Master provides a RESTful API for managing the mesh.
 
 ## Authentication
-All requests must include the `X-API-Key` header.
+All requests must include the `X-Kosatka-Key` header.
 
 ## Endpoints
 

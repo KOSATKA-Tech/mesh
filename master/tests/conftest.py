@@ -4,6 +4,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from kosatka_master.database import Base, get_db
 from kosatka_master.main import app
+
+# Import all models to ensure they are registered with Base.metadata
+from kosatka_master.models.client import Client  # noqa: F401
+from kosatka_master.models.node import Node  # noqa: F401
+from kosatka_master.models.routing import RoutingPolicy  # noqa: F401
+from kosatka_master.models.subscription import Subscription  # noqa: F401
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 # Use in-memory sqlite for tests

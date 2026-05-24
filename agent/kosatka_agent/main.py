@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException
 
 from .config import settings
 from .docs import router as docs_router
+from .installer import SmartProvisioner
 from .metrics import MetricsCollector
 from .protector import HeavyweightProtector
 from .providers.awg import AmneziaWGProvider
@@ -13,6 +14,7 @@ from .providers.base import BaseAgentProvider
 from .providers.marzban import MarzbanProvider
 from .providers.wireguard import WireGuardProvider
 from .providers.xray import XrayProvider
+from .providers.xray_relay import XrayRelayProvider
 from .security import get_api_key
 from .shaper import TrafficShaper
 
@@ -50,20 +52,17 @@ shaper = TrafficShaper(settings.wg_interface, settings.shaping_total_rate)
 # Initialize protector
 protector = HeavyweightProtector(shaper, provider, metrics_collector)
 
+# Initialize provisioner
+provisioner = SmartProvisioner(bin_path=settings.bin_path)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup logic
-    logger.info(f"Starting Kosatka Agent. Provider: {settings.provider_type}")
+# Initialize relay provider if needed
+relay_provider = None
+if settings.node_role in ("proxy", "exit"):
+    relay_provider = XrayRelayProvider(settings)
+
+
+async def _bootstrap_node():
     from .bootstrap import bootstrap_provider
-
-    # Start metrics collector
-    metrics_collector.start()
-
-    # Start shaper and protector if enabled
-    if settings.shaping_enabled:
-        await shaper.setup_shaping()
-        protector.start()
 
     try:
         await bootstrap_provider(settings.provider_type)
@@ -75,13 +74,51 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.error(f"Failed to bootstrap provider {settings.provider_type}: {exc}")
 
-    yield
+
+async def _startup():
+    # Startup logic
+    logger.info(f"Starting Kosatka Agent. Provider: {settings.provider_type}")
+
+    if relay_provider:
+        try:
+            await relay_provider.start()
+            logger.info(f"Xray Relay started in {settings.node_role} mode")
+        except Exception as exc:
+            logger.error(f"Failed to start Xray Relay: {exc}")
+
+    # Ensure providers are installed
+    try:
+        await provisioner.ensure_providers()
+    except Exception as exc:
+        logger.error(f"Provisioning failed: {exc}")
+
+    # Start metrics collector
+    metrics_collector.start()
+
+    # Start shaper and protector if enabled
+    if settings.shaping_enabled:
+        await shaper.setup_shaping()
+        protector.start()
+
+    await _bootstrap_node()
+
+
+async def _shutdown():
     # Shutdown logic
     logger.info("Kosatka Agent shutting down")
     await protector.stop()
     if settings.shaping_enabled:
         await shaper.cleanup_shaping()
     await metrics_collector.stop()
+    if relay_provider:
+        await relay_provider.stop()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _startup()
+    yield
+    await _shutdown()
 
 
 app = FastAPI(title="Kosatka Mesh Agent", lifespan=lifespan)

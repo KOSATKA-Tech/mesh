@@ -22,6 +22,18 @@ class Settings(BaseSettings):
     # AWG and vanilla WG side-by-side in the future without key collisions.
     wg_server_info_path: str = "/opt/kosatka/agent/wg_server.json"
 
+    bin_path: str = "/opt/kosatka/bin/"
+
+    # Stealth Chaining settings
+    node_role: str = "standalone"  # standalone | proxy | exit
+    upstream_address: str | None = None
+    relay_uuid: str | None = None
+    reality_private_key: str | None = None
+    reality_public_key: str | None = None
+    reality_short_id: str | None = None
+    reality_dest: str = "microsoft.com:443"
+    relay_port: int = 443
+
     # Shaping settings
     shaping_enabled: bool = False
     shaping_total_rate: str = "1gbit"  # Total interface bandwidth

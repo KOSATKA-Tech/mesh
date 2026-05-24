@@ -291,9 +291,6 @@ async def get_client_config_by_external(
         node = node_res.scalar_one_or_none()
         if node is not None:
             return await call_agent(node, "GET", f"/clients/{external_id}/config")
-        # else: the originating node is gone/disabled — fall through to
-        # best-effort scan rather than 404, the peer might have been
-        # migrated or the DB is out-of-sync.
 
     # 3. Last-resort scan across active nodes. The agent returns an empty
     # config string for unknown peers, so we keep going until one answers.

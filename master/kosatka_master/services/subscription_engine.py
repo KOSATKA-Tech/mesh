@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..agent_client import call_agent
 from ..models.client import Client
 from ..models.node import Node
 from ..models.subscription import Subscription
@@ -66,10 +67,8 @@ class SubscriptionEngine:
                     node_res = await self.db.execute(select(Node).where(Node.id == client.node_id))
                     node = node_res.scalar_one_or_none()
                     if node:
-                        from ..api.v1.clients import _call_agent
-
                         try:
-                            await _call_agent(node, "DELETE", f"/clients/{client.external_id}")
+                            await call_agent(node, "DELETE", f"/clients/{client.external_id}")
                             logger.info(
                                 f"Successfully revoked access for {client.external_id} on agent {node.name}"
                             )

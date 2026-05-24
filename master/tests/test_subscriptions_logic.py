@@ -25,7 +25,7 @@ async def test_subscription_expiration_lifecycle(db_session):
     await engine.create_subscription(client.id, "Pro Plan", expired_date)
 
     # 3. Run check_expirations
-    with patch("kosatka_master.api.v1.clients._call_agent", AsyncMock()) as mock_call:
+    with patch("kosatka_master.services.subscription_engine.call_agent", AsyncMock()) as mock_call:
         await engine.check_expirations()
 
         # Verify client is deactivated
@@ -95,7 +95,7 @@ async def test_provision_requires_subscription(client, db_session):
     )
 
     # Try again
-    with patch("kosatka_master.api.v1.clients._call_agent") as mock_call:
+    with patch("kosatka_master.api.v1.clients.call_agent") as mock_call:
         mock_call.return_value = {"id": "c3", "status": "added", "config_text": "ok"}
         response = await client.post(
             "/api/v1/clients/provision/",

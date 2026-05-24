@@ -37,7 +37,7 @@ async def test_api_client_list_nodes(mock_config):
         mock_req.return_value = [{"id": 1}]
         nodes = await client.list_nodes()
         assert nodes == [{"id": 1}]
-        mock_req.assert_called_once_with("GET", "/nodes")
+        mock_req.assert_called_once_with("GET", "/nodes", params={})
 
 
 @pytest.mark.asyncio
@@ -55,6 +55,8 @@ async def test_api_client_register_node(mock_config):
                 "address": "1.1.1.1",
                 "provider_type": "agent",
                 "api_key": None,
+                "role": "standalone",
+                "upstream_id": None,
             },
         )
 

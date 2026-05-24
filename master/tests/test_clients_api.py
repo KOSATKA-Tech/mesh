@@ -28,7 +28,7 @@ async def test_provision_client(client, db_session):
     )
 
     # 2. Mock agent call
-    with patch("kosatka_master.api.v1.clients._call_agent") as mock_call:
+    with patch("kosatka_master.api.v1.clients.call_agent") as mock_call:
         mock_call.return_value = {
             "client_id": "c1",
             "config_text": "wg-config",
@@ -96,7 +96,7 @@ async def test_provision_with_pin(client):
         headers=headers,
     )
 
-    with patch("kosatka_master.api.v1.clients._call_agent") as mock_call:
+    with patch("kosatka_master.api.v1.clients.call_agent") as mock_call:
         mock_call.return_value = {"id": "c1", "status": "added"}
 
         # Provision pinned to node_id
@@ -158,7 +158,7 @@ async def test_get_client_config(client):
         headers=headers,
     )
 
-    with patch("kosatka_master.api.v1.clients._call_agent") as mock_call:
+    with patch("kosatka_master.api.v1.clients.call_agent") as mock_call:
         mock_call.return_value = {"config": "stored-config"}
 
         response = await client.get("/api/v1/clients/by-external/c1/config", headers=headers)

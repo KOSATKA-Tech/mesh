@@ -1,14 +1,13 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from kosatka_master.config import settings
+from kosatka_master.agent_client import call_agent
 from kosatka_master.database import get_db
-from kosatka_master.http_client import get_global_httpx_client
 from kosatka_master.models.client import Client
 from kosatka_master.models.node import Node
 from kosatka_master.security import get_api_key
+from kosatka_master.services.chain_manager import ChainManager
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -184,82 +183,61 @@ async def _pick_node(db: AsyncSession, protocol: str, node_id: Optional[int]) ->
     return node_scores[0][1]
 
 
-async def _call_agent(node: Node, method: str, path: str, **kwargs: Any) -> Dict[str, Any]:
-    url = f"{node.address.rstrip('/')}{path}"
-    # Use the node's specific key if set; fall back to the global key.
-    # This allows per-node rotation.
-    key = node.api_key or settings.effective_agent_api_key()
-    headers = {}
-    if key:
-        headers["X-Kosatka-Key"] = key
-
-    try:
-        client = await get_global_httpx_client()
-        resp = await client.request(method, url, headers=headers, **kwargs)
-    except httpx.HTTPError as exc:
-        # ConnectError / TimeoutException / etc. — translate to a clean 502
-        # instead of leaking the raw traceback as a 500.
-        raise HTTPException(
-            status_code=502,
-            detail=f"Agent {node.name!r} unreachable: {exc}",
-        ) from exc
-    if resp.status_code >= 400:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Agent {node.name} returned {resp.status_code}: {resp.text[:256]}",
-        )
-    return resp.json()
-
-
-@router.post("/provision/", response_model=ClientProvisionResponse)
-async def provision_client(
-    req: ClientProvisionRequest, db: AsyncSession = Depends(get_db)
-) -> ClientProvisionResponse:
-    """Create-or-get a Client row, pick a node, and ask the agent to
-    materialize the peer. Returns the ready-to-import client config."""
-    # Idempotent create of the client record.
-    existing = await db.execute(select(Client).where(Client.external_id == req.external_id))
+async def _get_or_create_client(db: AsyncSession, external_id: str, email: str | None) -> Client:
+    existing = await db.execute(select(Client).where(Client.external_id == external_id))
     client = existing.scalar_one_or_none()
     if client is None:
-        client = Client(external_id=req.external_id, email=req.email)
+        client = Client(external_id=external_id, email=email)
         db.add(client)
         try:
             await db.commit()
         except IntegrityError:
-            # Two concurrent provisions raced on the same external_id; the
-            # unique constraint catches the loser. Roll back and pick up the
-            # winning row instead of 500-ing.
             await db.rollback()
-            race = await db.execute(select(Client).where(Client.external_id == req.external_id))
+            race = await db.execute(select(Client).where(Client.external_id == external_id))
             client = race.scalar_one()
         else:
             await db.refresh(client)
-    elif req.email and client.email != req.email:
-        client.email = req.email
+    elif email and client.email != email:
+        client.email = email
         await db.commit()
         await db.refresh(client)
+    return client
 
-    # Production check: ensure client has an active subscription
+
+async def _ensure_active_subscription(db: AsyncSession, client_id: int, external_id: str):
     from ...models.subscription import Subscription
 
     sub_res = await db.execute(
         select(Subscription).where(
-            Subscription.client_id == client.id, Subscription.is_active.is_(True)
+            Subscription.client_id == client_id, Subscription.is_active.is_(True)
         )
     )
     if not sub_res.scalar_one_or_none():
         raise HTTPException(
             status_code=403,
-            detail=f"Client {req.external_id} has no active subscription. Cannot provision.",
+            detail=f"Client {external_id} has no active subscription. Cannot provision.",
         )
+
+
+@router.post("/provision", response_model=ClientProvisionResponse)
+@router.post("/provision/", response_model=ClientProvisionResponse, include_in_schema=False)
+async def provision_client(
+    req: ClientProvisionRequest, db: AsyncSession = Depends(get_db)
+) -> ClientProvisionResponse:
+    """Create-or-get a Client row, pick a node, and ask the agent to
+    materialize the peer. Returns the ready-to-import client config."""
+    client = await _get_or_create_client(db, req.external_id, req.email)
+    await _ensure_active_subscription(db, client.id, req.external_id)
 
     node = await _pick_node(db, req.protocol, req.node_id)
 
-    agent_payload = {"external_id": req.external_id, "email": req.email}
-    agent_result = await _call_agent(node, "POST", "/clients", json=agent_payload)
+    if req.protocol.startswith("stealth-"):
+        chain_manager = ChainManager(db)
+        agent_result = await chain_manager.provision_chain(client, node, req.protocol)
+    else:
+        agent_payload = {"external_id": req.external_id, "email": req.email}
+        agent_result = await call_agent(node, "POST", "/clients", json=agent_payload)
 
-    # Remember which node materialised the peer so future config/revoke
-    # calls can find it without the caller passing node_id.
     if client.node_id != node.id:
         client.node_id = node.id
         await db.commit()
@@ -267,9 +245,8 @@ async def provision_client(
 
     config_text = agent_result.get("config_text") or ""
     if not config_text:
-        # Fall back to a dedicated config fetch if the agent returned a bare result.
         try:
-            follow_up = await _call_agent(node, "GET", f"/clients/{req.external_id}/config")
+            follow_up = await call_agent(node, "GET", f"/clients/{req.external_id}/config")
             config_text = follow_up.get("config", "") or ""
         except HTTPException:
             config_text = ""
@@ -302,7 +279,7 @@ async def get_client_config_by_external(
         node = q.scalar_one_or_none()
         if node is None:
             raise HTTPException(status_code=404, detail=f"Node {node_id} not found or inactive")
-        return await _call_agent(node, "GET", f"/clients/{external_id}/config")
+        return await call_agent(node, "GET", f"/clients/{external_id}/config")
 
     # 2. Mapping persisted at provision time
     client_res = await db.execute(select(Client).where(Client.external_id == external_id))
@@ -313,17 +290,14 @@ async def get_client_config_by_external(
         )
         node = node_res.scalar_one_or_none()
         if node is not None:
-            return await _call_agent(node, "GET", f"/clients/{external_id}/config")
-        # else: the originating node is gone/disabled — fall through to
-        # best-effort scan rather than 404, the peer might have been
-        # migrated or the DB is out-of-sync.
+            return await call_agent(node, "GET", f"/clients/{external_id}/config")
 
     # 3. Last-resort scan across active nodes. The agent returns an empty
     # config string for unknown peers, so we keep going until one answers.
     active = await db.execute(select(Node).where(Node.is_active.is_(True)))
     for node in active.scalars().all():
         try:
-            result = await _call_agent(node, "GET", f"/clients/{external_id}/config")
+            result = await call_agent(node, "GET", f"/clients/{external_id}/config")
         except HTTPException:
             continue
         if result.get("config"):

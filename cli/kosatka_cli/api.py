@@ -31,17 +31,28 @@ class APIClient:
             response.raise_for_status()
             return response.json()
 
-    async def list_nodes(self) -> List[Dict[str, Any]]:
-        return await self.request("GET", "/nodes")
+    async def list_nodes(self, role: str | None = None) -> List[Dict[str, Any]]:
+        params = {}
+        if role:
+            params["role"] = role
+        return await self.request("GET", "/nodes", params=params)
 
     async def register_node(
-        self, name: str, address: str, provider_type: str = "agent", api_key: str | None = None
+        self,
+        name: str,
+        address: str,
+        provider_type: str = "agent",
+        api_key: str | None = None,
+        role: str = "standalone",
+        upstream_id: int | None = None,
     ) -> Dict[str, Any]:
         data = {
             "name": name,
             "address": address,
             "provider_type": provider_type,
             "api_key": api_key,
+            "role": role,
+            "upstream_id": upstream_id,
         }
         return await self.request("POST", "/nodes", json=data)
 

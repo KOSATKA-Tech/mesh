@@ -21,6 +21,8 @@ class Node(Base):
     status: Mapped[str] = mapped_column(String(50), default="offline")
     last_seen: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    role: Mapped[str] = mapped_column(String(50), default="standalone")
+    upstream_id: Mapped[int | None] = mapped_column(ForeignKey("nodes.id"), nullable=True)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
 
     stats: Mapped[list["NodeStat"]] = relationship(

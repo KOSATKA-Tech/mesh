@@ -6,6 +6,17 @@ from sqlalchemy.orm import DeclarativeBase
 from .config import settings
 
 
+class Base(DeclarativeBase):
+    pass
+
+
+# Import all models to ensure they are registered with Base.metadata
+from .models.client import Client  # noqa: F401, E402
+from .models.node import Node  # noqa: F401, E402
+from .models.routing import RoutingPolicy  # noqa: F401, E402
+from .models.subscription import Subscription  # noqa: F401, E402
+
+
 def _ensure_sqlite_directory(database_url: str) -> None:
     """``sqlite3.connect`` raises ``unable to open database file`` when the
     parent directory does not exist. Creating it on import keeps the
@@ -30,10 +41,6 @@ _ensure_sqlite_directory(settings.database_url)
 
 engine = create_async_engine(settings.database_url, echo=False)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 async def get_db():

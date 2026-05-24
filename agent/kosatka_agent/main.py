@@ -1,4 +1,6 @@
 import logging
+import sys
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 
@@ -11,16 +13,15 @@ from .providers.wireguard import WireGuardProvider
 from .providers.xray import XrayProvider
 from .security import get_api_key
 
-app = FastAPI(title="Kosatka Mesh Agent")
-logger = logging.getLogger(__name__)
+# Configure logging to ensure it shows up in uvicorn
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+logger = logging.getLogger("kosatka_agent")
 
 
 def get_provider() -> BaseAgentProvider:
     if settings.provider_type == "wireguard":
         return WireGuardProvider(config_path=settings.wg_config_path)
     elif settings.provider_type == "marzban":
-        if not all([settings.marzban_url, settings.marzban_username, settings.marzban_password]):
-            raise ValueError("Marzban provider requires url, username and password")
         return MarzbanProvider(
             url=settings.marzban_url,
             username=settings.marzban_username,
@@ -38,9 +39,10 @@ def get_provider() -> BaseAgentProvider:
 provider = get_provider()
 
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info(f"Bootstrapping provider: {settings.provider_type}")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup logic
+    logger.info(f"Starting Kosatka Agent. Provider: {settings.provider_type}")
     from .bootstrap import bootstrap_provider
 
     try:
@@ -49,17 +51,24 @@ async def startup_event():
         if settings.provider_type in ("wireguard", "awg"):
             if hasattr(provider, "_ensure_server"):
                 await provider._ensure_server()
+        logger.info("Bootstrapping completed successfully")
     except Exception as exc:
         logger.error(f"Failed to bootstrap provider {settings.provider_type}: {exc}")
+
+    yield
+    # Shutdown logic (optional)
+    logger.info("Kosatka Agent shutting down")
+
+
+app = FastAPI(title="Kosatka Mesh Agent", lifespan=lifespan)
+
+# Include documentation router
+app.include_router(docs_router)
 
 
 @app.get("/health/")
 async def health():
     return {"status": "ok", "provider": settings.provider_type}
-
-
-# Include documentation router
-app.include_router(docs_router)
 
 
 @app.get("/clients", dependencies=[Depends(get_api_key)])

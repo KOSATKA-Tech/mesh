@@ -186,7 +186,7 @@ async def interface_exists(interface: str) -> bool:
         return False
 
 
-async def bootstrap_server(
+async def bootstrap_server(  # noqa: C901
     cmd_prefix: str,
     server_info_path: str,
     interface: str,
@@ -199,14 +199,28 @@ async def bootstrap_server(
     # 1. Ensure tools are installed
     await bootstrap_provider(cmd_prefix)
 
-    # 2. Generate keys
-    privkey, pubkey = await generate_keypair(cmd_prefix)
+    # 2. Check if we already have server info and config
+    server = load_server_info(server_info_path)
+    conf_dir = "/etc/amnezia/amneziawg" if cmd_prefix == "awg" else "/etc/wireguard"
+    conf_path = Path(conf_dir) / f"{interface}.conf"
 
-    # 3. Get public IP
+    if server and conf_path.exists():
+        logger.info(f"Server info and config exist, attempting to bring up {interface}...")
+        try:
+            await run([f"{cmd_prefix}-quick", "up", interface])
+        except RuntimeError as exc:
+            if "already exists" in str(exc):
+                logger.info(f"Interface {interface} already up")
+            else:
+                raise
+        return server
+
+    # 3. Generate new setup if something is missing
+    logger.info(f"Creating new {cmd_prefix} server setup...")
+    privkey, pubkey = await generate_keypair(cmd_prefix)
     ip = await get_public_ip()
     endpoint = f"{ip}:{port}"
 
-    # 4. AmneziaWG specific obfuscation
     awg_params = {}
     if cmd_prefix == "awg":
         awg_params = {
@@ -223,12 +237,8 @@ async def bootstrap_server(
 
     server = ServerInfo(public_key=pubkey, endpoint=endpoint, subnet=subnet, awg_params=awg_params)
 
-    # 5. Generate and save wg0.conf
-    # We write a minimal config. wg-quick will use this.
-    conf_dir = "/etc/amnezia/amneziawg" if cmd_prefix == "awg" else "/etc/wireguard"
+    # 4. Generate and save wg0.conf
     os.makedirs(conf_dir, exist_ok=True)
-    conf_path = Path(conf_dir) / f"{interface}.conf"
-
     conf_lines = [
         "[Interface]",
         f"PrivateKey = {privkey}",
@@ -240,19 +250,18 @@ async def bootstrap_server(
 
     conf_path.write_text("\n".join(conf_lines) + "\n")
 
-    # 6. Bring up the interface
+    # 5. Bring up the interface
     try:
         await run([f"{cmd_prefix}-quick", "up", interface])
     except RuntimeError as exc:
         if "already exists" in str(exc):
             logger.info(f"Interface {interface} already up")
         else:
-            # Cleanup if we failed to bring up the interface
             if conf_path.exists():
                 conf_path.unlink()
             raise
 
-    # 7. Save server info ONLY if interface is up
+    # 6. Save server info ONLY if interface is up
     save_server_info(server_info_path, server)
     return server
 

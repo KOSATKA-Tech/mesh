@@ -179,6 +179,20 @@ async def provision_client(
         await db.commit()
         await db.refresh(client)
 
+    # Production check: ensure client has an active subscription
+    from ...models.subscription import Subscription
+
+    sub_res = await db.execute(
+        select(Subscription).where(
+            Subscription.client_id == client.id, Subscription.is_active.is_(True)
+        )
+    )
+    if not sub_res.scalar_one_or_none():
+        raise HTTPException(
+            status_code=403,
+            detail=f"Client {req.external_id} has no active subscription. Cannot provision.",
+        )
+
     node = await _pick_node(db, req.protocol, req.node_id)
 
     agent_payload = {"external_id": req.external_id, "email": req.email}

@@ -40,3 +40,13 @@ async def test_check_expirations_job():
 
         mock_engine_cls.assert_called_once_with(mock_db)
         mock_engine.check_expirations.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_setup_scheduler():
+    from kosatka_master.scheduler import setup_scheduler
+
+    with patch("kosatka_master.scheduler.scheduler") as mock_sched:
+        setup_scheduler()
+        assert mock_sched.add_job.call_count >= 2
+        mock_sched.start.assert_called_once()

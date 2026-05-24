@@ -50,7 +50,8 @@ async def install_wireguard():
     """Install WireGuard tools."""
     if not shutil.which("wg"):
         logger.info("WireGuard tools missing, installing...")
-        await ensure_apt_packages(["wireguard-tools", "iproute2", "iptables"])
+        # Install 'wireguard' package which includes tools and kernel module
+        await ensure_apt_packages(["wireguard", "wireguard-tools", "iproute2", "iptables"])
 
 
 async def install_amneziawg():
@@ -94,11 +95,13 @@ async def install_marzban():
         await run_command(["curl", "-fsSL", "https://get.docker.com", "-o", "get-docker.sh"])
         await run_command(["sh", "get-docker.sh"])
 
-    if not shutil.which("docker-compose") and not await run_command(
-        ["docker", "compose", "version"], check=False
-    ):
-        logger.info("Docker Compose missing, installing...")
-        await ensure_apt_packages(["docker-compose-plugin"])
+    # Check for docker compose (plugin or binary)
+    try:
+        await run_command(["docker", "compose", "version"])
+    except Exception:
+        if not shutil.which("docker-compose"):
+            logger.info("Docker Compose missing, installing...")
+            await ensure_apt_packages(["docker-compose-plugin"])
 
 
 async def bootstrap_provider(provider_type: str):

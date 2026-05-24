@@ -16,7 +16,7 @@ async def test_awg_provider(tmp_path):
                 "endpoint": "node.example.com:51820",
                 "subnet": "10.8.0.0/24",
                 "dns": "1.1.1.1",
-                "Jc": 4,
+                "awg_params": {"Jc": 4},
             }
         )
     )
@@ -36,6 +36,8 @@ async def test_awg_provider(tmp_path):
             return "client-psk"
         if cmd[:3] == ["awg", "show", provider.interface]:
             return "client-pub\tpsk\tendpoint\t10.8.0.2/32\t0\t100\t200\t0"
+        if cmd[:2] == ["ip", "link"]:
+            return "up"
         return ""
 
     with patch.object(_wgcore, "run", AsyncMock(side_effect=fake_run)):
@@ -72,8 +74,21 @@ async def test_awg_provider(tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_awg_provider_no_server_info(tmp_path):
+async def test_awg_provider_bootstrap(tmp_path):
     provider = AmneziaWGProvider()
-    provider.server_info_path = str(tmp_path / "missing.json")
-    with pytest.raises(RuntimeError):
-        await provider.create_client({"id": "1"})
+    provider.server_info_path = str(tmp_path / "new_awg_server.json")
+    provider.state_path = str(tmp_path / "new_awg_peers.json")
+
+    with patch("kosatka_agent.providers._wgcore.bootstrap_server") as mock_bootstrap:
+        mock_bootstrap.return_value = AsyncMock()
+        mock_bootstrap.return_value.subnet = "10.8.0.0/24"
+        mock_bootstrap.return_value.dns = "1.1.1.1"
+        mock_bootstrap.return_value.public_key = "pub"
+        mock_bootstrap.return_value.endpoint = "1.2.3.4:51820"
+        mock_bootstrap.return_value.awg_params = {}
+
+        with patch(
+            "kosatka_agent.providers._wgcore.interface_exists", AsyncMock(return_value=False)
+        ):
+            await provider._ensure_server()
+            assert mock_bootstrap.called

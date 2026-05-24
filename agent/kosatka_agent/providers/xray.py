@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 XRAY_CONFIG_DIR = Path("/etc/xray")
 XRAY_CONFIG_PATH = XRAY_CONFIG_DIR / "config.json"
 XRAY_STATE_PATH = Path("/opt/kosatka/agent/xray_peers.json")
+XRAY_API_PORT = 10085
 
 
 class XrayProvider(BaseAgentProvider):
@@ -25,30 +26,54 @@ class XrayProvider(BaseAgentProvider):
             XRAY_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
             await get_public_ip()
+            # Default production-ready config with API enabled
             config = {
+                "log": {"loglevel": "info"},
+                "api": {
+                    "tag": "api",
+                    "services": ["HandlerService", "LoggerService", "StatsService"],
+                },
+                "stats": {},
+                "policy": {
+                    "levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}},
+                    "system": {"statsInboundUplink": True, "statsInboundDownlink": True},
+                },
                 "inbounds": [
                     {
+                        "tag": "proxy",
                         "port": 443,
                         "protocol": "vless",
                         "settings": {"clients": [], "decryption": "none"},
                         "streamSettings": {"network": "tcp", "security": "none"},
-                    }
+                    },
+                    {
+                        "listen": "127.0.0.1",
+                        "port": XRAY_API_PORT,
+                        "protocol": "dokodemo-door",
+                        "settings": {"address": "127.0.0.1"},
+                        "tag": "api",
+                    },
                 ],
-                "outbounds": [{"protocol": "freedom"}],
+                "outbounds": [{"protocol": "freedom", "tag": "direct"}],
+                "routing": {
+                    "rules": [{"inboundTag": ["api"], "outboundTag": "api", "type": "field"}]
+                },
             }
             XRAY_CONFIG_PATH.write_text(json.dumps(config, indent=2))
 
-        # Ensure xray is running (best effort)
-        # In a real setup, this might be a systemd service or background proc
+        # Best effort restart
         try:
             await asyncio.create_subprocess_exec("systemctl", "restart", "xray")
         except Exception:
-            pass
+            logger.warning("Could not restart xray via systemctl")
 
     def _load_state(self) -> Dict[str, Any]:
         if not XRAY_STATE_PATH.exists():
             return {"peers": {}}
-        return json.loads(XRAY_STATE_PATH.read_text())
+        try:
+            return json.loads(XRAY_STATE_PATH.read_text())
+        except Exception:
+            return {"peers": {}}
 
     def _save_state(self, state: Dict[str, Any]):
         XRAY_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -78,14 +103,14 @@ class XrayProvider(BaseAgentProvider):
             state["peers"][client_id] = peer
             self._save_state(state)
 
-            # Update Xray config
+            # For production readiness without gRPC library installed yet,
+            # we update config and reload.
             config = json.loads(XRAY_CONFIG_PATH.read_text())
             config["inbounds"][0]["settings"]["clients"].append(
                 {"id": user_uuid, "email": f"{client_id}@kosatka.mesh"}
             )
             XRAY_CONFIG_PATH.write_text(json.dumps(config, indent=2))
 
-            # Restart Xray
             try:
                 await asyncio.create_subprocess_exec("systemctl", "reload", "xray")
             except Exception:
@@ -123,4 +148,6 @@ class XrayProvider(BaseAgentProvider):
         return f"vless://{peer['uuid']}@{ip}:443?encryption=none&security=none&type=tcp#Kosatka-{client_id}"
 
     async def get_client_stats(self, client_id: str) -> Dict[str, Any]:
-        return {"id": client_id, "up": 0, "down": 0}
+        # Implementation of stats gathering via Xray API would go here.
+        # For now, we return empty stats to avoid crashes.
+        return {"id": client_id, "uplink": 0, "downlink": 0}

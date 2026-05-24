@@ -87,7 +87,7 @@ async def test_sync_all_nodes_one_failing_does_not_break_others(db_session):
     async def flaky(self, address):
         if address == flaky_addr:
             raise RuntimeError("agent unreachable")
-        return True
+        return {"status": "ok", "provider": "agent"}
 
     manager = NodeManager(db_session)
     with patch(

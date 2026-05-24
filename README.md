@@ -58,7 +58,7 @@ works out of the box without `mkdir data` first.
 
 ---
 
-## 🐋 Docker deployment (recommended for production)
+## Docker deployment (recommended for production)
 
 The deployment is split into two compose files — one per role — so a
 master host and an agent host configure cleanly without overlapping
@@ -225,7 +225,7 @@ async def handle_expiry(event):
 
 ---
 
-## 🏗 Supported VPN Providers
+## Supported VPN Providers
 
 KOSATKA Mesh can manage the following services on any node:
 - **AmneziaWG**: Modern, obfuscated WireGuard fork.

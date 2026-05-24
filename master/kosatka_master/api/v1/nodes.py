@@ -40,6 +40,15 @@ async def get_nodes(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get("/{node_id}", response_model=NodeSchema)
+async def get_node(node_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Node).where(Node.id == node_id))
+    node = result.scalar_one_or_none()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return node
+
+
 @router.post("/", response_model=NodeSchema)
 async def create_node(node_data: NodeCreate, db: AsyncSession = Depends(get_db)):
     # Upsert semantics so re-running ansible against the same node is

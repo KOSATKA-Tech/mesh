@@ -10,6 +10,7 @@ dependencies = [
     "pydantic-settings",
     "httpx",
     "python-multipart",
+    "psutil",
 ]
 
 [build-system]

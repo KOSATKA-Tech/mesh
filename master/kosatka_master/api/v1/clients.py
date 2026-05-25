@@ -53,6 +53,7 @@ class ClientProvisionResponse(BaseModel):
     config_text: str
     address: Optional[str] = None
     public_key: Optional[str] = None
+    sub_token: Optional[str] = None
 
 
 @router.get("/", response_model=List[ClientSchema])
@@ -262,6 +263,7 @@ async def provision_client(
         config_text=config_text,
         address=agent_result.get("address"),
         public_key=agent_result.get("public_key"),
+        sub_token=client.sub_token,
     )
 
 

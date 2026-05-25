@@ -51,6 +51,7 @@ class Client(ClientBase):
     public_key: Optional[str] = None
     node_id: Optional[int] = None
     provider_type: Optional[str] = None
+    sub_token: Optional[str] = None
 
 
 class ProvisionRequest(BaseModel):

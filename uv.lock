@@ -1079,6 +1079,7 @@ name = "kosatka-mesh"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "kosatka-agent" },
     { name = "kosatka-cli" },
     { name = "kosatka-master" },
@@ -1103,6 +1104,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "kosatka-agent", editable = "agent" },
     { name = "kosatka-cli", editable = "cli" },
     { name = "kosatka-master", editable = "master" },

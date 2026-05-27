@@ -8,6 +8,11 @@ WORKDIR /app
 # requirements.txt that didn't actually exist in the repo, so the image
 # wouldn't build at all — switching to uv picks up the lockfile and
 # resolves through pyproject.toml directly.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock README.md /app/

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from ...main import host_monitor
+from ...instances import host_monitor
 from ...security import get_api_key
 
 router = APIRouter(prefix="/host", tags=["host"])

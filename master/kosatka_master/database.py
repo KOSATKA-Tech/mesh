@@ -10,15 +10,6 @@ class Base(DeclarativeBase):
     pass
 
 
-# Import all models to ensure they are registered with Base.metadata
-from .models.alert import SystemAlert  # noqa: F401, E402
-from .models.client import Client  # noqa: F401, E402
-from .models.event import Event  # noqa: F401, E402
-from .models.node import Node  # noqa: F401, E402
-from .models.routing import ClientRoutingProfile, GeositeEntry, RoutingPolicy  # noqa: F401, E402
-from .models.subscription import Subscription  # noqa: F401, E402
-
-
 def _ensure_sqlite_directory(database_url: str) -> None:
     """``sqlite3.connect`` raises ``unable to open database file`` when the
     parent directory does not exist. Creating it on import keeps the

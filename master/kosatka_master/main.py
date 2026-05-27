@@ -16,9 +16,8 @@ from .http_client import http_client_lifespan
 from .scheduler import scheduler, setup_scheduler
 from .security import get_api_key
 from .services.host_monitor import HostMonitor
-
-# Initialize services
-host_monitor = HostMonitor()
+from .instances import host_monitor
+from . import models  # noqa: F401
 
 
 @asynccontextmanager

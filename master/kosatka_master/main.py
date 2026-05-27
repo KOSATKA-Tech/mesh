@@ -8,16 +8,15 @@ from fastapi import BackgroundTasks, Depends, FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import models  # noqa: F401
 from .api.v1.dashboard import router as dashboard_router
 from .api.v1.router import api_router
 from .api.v1.subscriptions import public_router as subscriptions_public_router
 from .database import Base, engine
 from .http_client import http_client_lifespan
+from .instances import host_monitor
 from .scheduler import scheduler, setup_scheduler
 from .security import get_api_key
-from .services.host_monitor import HostMonitor
-from .instances import host_monitor
-from . import models  # noqa: F401
 
 
 @asynccontextmanager

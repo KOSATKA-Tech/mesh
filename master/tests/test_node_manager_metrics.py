@@ -24,7 +24,9 @@ async def test_sync_all_nodes_collects_metrics(db_session):
     fake_response = {
         "status": "ok",
         "provider": "agent",
-        "metrics": {"cpu_usage_percent": 45.5, "rx_bps": 1000, "tx_bps": 2000},    }
+        "metrics": {"cpu_usage_percent": 45.5, "rx_bps": 1000, "tx_bps": 2000},
+    }
+
     async def fake_sync_node(self, address):
         return fake_response
 
@@ -74,7 +76,9 @@ async def test_sync_all_nodes_prunes_old_stats(db_session):
     fake_response = {
         "status": "ok",
         "provider": "agent",
-        "metrics": {"cpu_usage_percent": 99.9, "rx_bps": 0, "tx_bps": 0},    }
+        "metrics": {"cpu_usage_percent": 99.9, "rx_bps": 0, "tx_bps": 0},
+    }
+
     async def fake_sync_node(self, address):
         return fake_response
 

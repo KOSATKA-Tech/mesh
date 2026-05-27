@@ -25,7 +25,12 @@ def test_ema_smoothing():
 def test_get_smoothed_metrics_initial():
     collector = MetricsCollector()
     metrics = collector.get_smoothed_metrics()
-    assert metrics == {"cpu_usage_percent": 0.0, "rx_bps": 0.0, "tx_bps": 0.0}
+    assert metrics["cpu_usage_percent"] == 0.0
+    assert metrics["rx_bps"] == 0.0
+    assert metrics["tx_bps"] == 0.0
+    assert "memory_usage_percent" in metrics
+    assert "disk_usage_percent" in metrics
+    assert "temperature" in metrics
 
 
 @pytest.mark.asyncio

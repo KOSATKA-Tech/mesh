@@ -30,7 +30,7 @@ class NotificationService:
                         "level": level,
                         "source": source,
                         "message": message,
-                        "secret": settings.webhook_secret
+                        "secret": settings.webhook_secret,
                     }
                     await client.post(settings.webhook_url, json=payload, timeout=5.0)
                 except Exception as e:

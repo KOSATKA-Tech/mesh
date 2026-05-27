@@ -36,6 +36,8 @@ class NodeStat(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     node_id: Mapped[int] = mapped_column(ForeignKey("nodes.id"))
     cpu_ema: Mapped[float] = mapped_column(Float)
+    memory_usage: Mapped[float | None] = mapped_column(Float, nullable=True)
+    disk_usage: Mapped[float | None] = mapped_column(Float, nullable=True)
     rx_bps: Mapped[float] = mapped_column(Float)
     tx_bps: Mapped[float] = mapped_column(Float)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=func.now())

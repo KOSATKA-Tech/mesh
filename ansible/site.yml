@@ -12,7 +12,17 @@
   become: true
   roles:
     - common
-    - firewall
+    - security
+
+- name: Setup HTTPS Proxy for all nodes
+  hosts: all
+  become: true
+  vars:
+    # node_domain can be overridden per host, or calculated from name + base_domain
+    node_domain: "{{ inventory_hostname }}.{{ base_domain | default('example.com') }}"
+  roles:
+    - role: proxy
+      when: use_https | default(false) | bool
 
 - name: Deploy KOSATKA master
   hosts: master

@@ -1,0 +1,84 @@
+---
+- name: Install security packages
+  apt:
+    name:
+      - ufw
+      - fail2ban
+    state: present
+    update_cache: yes
+
+- name: Configure UFW - Default deny incoming
+  ufw:
+    direction: incoming
+    policy: deny
+
+- name: Configure UFW - Allow Loopback
+  ufw:
+    rule: allow
+    interface: lo
+    direction: in
+
+- name: Configure UFW - Allow SSH
+  ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Configure UFW - Allow HTTP/HTTPS (TCP and UDP for Hysteria2)
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop:
+    - { port: '80', proto: 'tcp' }
+    - { port: '443', proto: 'tcp' }
+    - { port: '443', proto: 'udp' }
+
+- name: Configure UFW - Allow Master API Port
+  ufw:
+    rule: allow
+    port: "{{ kosatka_master_port | default(8000) }}"
+    proto: tcp
+  when: "'master' in group_names"
+
+- name: Configure UFW - Allow Agent API Port (Nodes only)
+  ufw:
+    rule: allow
+    port: "{{ agent_port | default(8001) }}"
+    proto: tcp
+  when: "'master' not in group_names"
+
+- name: Configure UFW - Allow VPN Protocols (UDP)
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: udp
+  loop:
+    - "{{ awg_listen_port | default(51820) }}"
+    - "8443" # TUIC default port
+  when:
+    - "'master' not in group_names"
+    - (kosatka_provider_type | default('awg')) in ['awg', 'amneziawg', 'wireguard', 'sing-box', 'hysteria2', 'tuic']
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+
+- name: Configure Fail2Ban - Moderate SSH Jail
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+  notify: restart fail2ban
+
+- name: Configure Docker logging limits
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+  notify: restart docker

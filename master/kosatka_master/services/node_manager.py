@@ -49,9 +49,18 @@ class NodeManager:
         )
 
         now = datetime.now(timezone.utc).replace(tzinfo=None)
+        from .notifications import notification_service
+
         for node, outcome in zip(nodes, results):
             # outcome is either Dict, None, or an Exception
             is_up = isinstance(outcome, dict)
+
+            # Alert on status change to offline
+            if not is_up and node.status == "online":
+                await notification_service.notify("critical", node.name, "Node went OFFLINE! 🔴")
+            elif is_up and node.status == "offline":
+                await notification_service.notify("info", node.name, "Node is back ONLINE! 🟢")
+
             node.status = "online" if is_up else "offline"
             node.last_seen = now
 
@@ -64,15 +73,42 @@ class NodeManager:
 
                 # Task 6: Collect metrics
                 metrics = outcome.get("metrics", {})
-                cpu_ema = metrics.get("cpu_ema", 0.0)
-                bw = metrics.get("bandwidth", {})
-                rx_bps = bw.get("rx_bps", 0.0)
-                tx_bps = bw.get("tx_bps", 0.0)
+                cpu_ema = metrics.get("cpu_usage_percent", 0.0)
+                mem_usage = metrics.get("memory_usage_percent")
+                disk_usage = metrics.get("disk_usage_percent")
+                temp = metrics.get("temperature")
+                rx_bps = metrics.get("rx_bps", 0.0)
+                tx_bps = metrics.get("tx_bps", 0.0)
 
                 stat = NodeStat(
-                    node_id=node.id, cpu_ema=cpu_ema, rx_bps=rx_bps, tx_bps=tx_bps, timestamp=now
+                    node_id=node.id,
+                    cpu_ema=cpu_ema,
+                    memory_usage=mem_usage,
+                    disk_usage=disk_usage,
+                    rx_bps=rx_bps,
+                    tx_bps=tx_bps,
+                    timestamp=now,
                 )
                 self.db.add(stat)
+
+                # Check for alerts
+                if cpu_ema > 90.0:
+                    await notification_service.notify(
+                        "warning", node.name, f"High CPU usage: {cpu_ema:.1f}%"
+                    )
+                if mem_usage and mem_usage > 90.0:
+                    await notification_service.notify(
+                        "warning", node.name, f"High Memory usage: {mem_usage:.1f}%"
+                    )
+                if disk_usage and disk_usage > 90.0:
+                    await notification_service.notify(
+                        "critical", node.name, f"Critical Disk space: {disk_usage:.1f}% left"
+                    )
+                if temp and temp > 80.0:
+                    await notification_service.notify(
+                        "warning", node.name, f"High Temperature detected: {temp:.1f}°C"
+                    )
+
                 await self.db.flush()
 
                 # Prune old stats: keep only last 20

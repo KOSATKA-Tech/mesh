@@ -1,7 +1,7 @@
 import typer
 from rich.console import Console
 
-from . import config, deploy, monitor, nodes
+from . import config, deploy, host, monitor, nodes
 
 app = typer.Typer(help="Kosatka Mesh CLI - Manage your global VPN mesh")
 console = Console()
@@ -12,6 +12,7 @@ agent_app = typer.Typer(help="Manage and run Kosatka Agent service")
 app.add_typer(nodes.app, name="nodes")
 app.add_typer(deploy.app, name="deploy")
 app.add_typer(monitor.app, name="monitor")
+app.add_typer(host.app, name="host")
 app.add_typer(master_app, name="master")
 app.add_typer(agent_app, name="agent")
 
@@ -50,9 +51,33 @@ def login(
     """Log in to a Kosatka Master instance"""
     if "://" not in base_url:
         base_url = f"http://{base_url}"
-    cfg = config.Config(base_url=base_url, api_key=api_key)
+    cfg = config.load_config()
+    cfg.base_url = base_url
+    cfg.api_key = api_key
     config.save_config(cfg)
     console.print(f"[green]Successfully saved configuration to {config.CONFIG_FILE}[/green]")
+
+
+@app.command("dns-setup")
+def dns_setup(
+    provider: str = typer.Option("manual", help="DNS provider: manual, beget"),
+    base_domain: str = typer.Option(None, help="Base domain (e.g., ub.kosatka.tech)"),
+):
+    """Configure DNS provider and base domain for SSL/HTTPS automation"""
+    cfg = config.load_config()
+    cfg.dns_provider = provider
+    if base_domain:
+        cfg.base_domain = base_domain
+
+    if provider == "beget":
+        cfg.beget_login = typer.prompt("Beget API Login")
+        cfg.beget_api_key = typer.prompt("Beget API Key", hide_input=True)
+
+    if not cfg.base_domain:
+        cfg.base_domain = typer.prompt("Base domain (e.g., ub.kosatka.tech)")
+
+    config.save_config(cfg)
+    console.print("[green]DNS configuration saved.[/green]")
 
 
 @app.command()

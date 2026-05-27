@@ -128,3 +128,21 @@ async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> D
         "status": node.status,
         "provider_type": node.provider_type,
     }
+
+
+@router.get("/{node_id}/host/metrics")
+async def get_node_host_metrics(node_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Node).where(Node.id == node_id))
+    node = result.scalar_one_or_none()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    key = node.api_key or settings.effective_agent_api_key()
+    provider = AgentNodeProvider(key)
+
+    # Proxy to Agent's /health/ which contains metrics
+    health_data = await provider.sync_node(node.address)
+    if not health_data:
+        raise HTTPException(status_code=503, detail="Agent unreachable")
+
+    return health_data.get("metrics", {})

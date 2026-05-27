@@ -15,6 +15,10 @@ from .database import Base, engine
 from .http_client import http_client_lifespan
 from .scheduler import scheduler, setup_scheduler
 from .security import get_api_key
+from .services.host_monitor import HostMonitor
+
+# Initialize services
+host_monitor = HostMonitor()
 
 
 @asynccontextmanager
@@ -24,6 +28,9 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    # Start services
+    host_monitor.start()
+
     # setup_scheduler() registers sync_nodes_job + check_expirations_job
     # and calls scheduler.start() internally. Calling scheduler.start() here
     # directly would leave the scheduler jobless.
@@ -32,6 +39,7 @@ async def lifespan(app: FastAPI):
         try:
             yield
         finally:
+            await host_monitor.stop()
             scheduler.shutdown()
 
 

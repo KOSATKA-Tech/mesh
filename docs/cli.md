@@ -26,6 +26,12 @@ uv pip install -e .
 - `kosatka-mesh nodes add NAME ADDRESS`: Register a new node.
 - `kosatka-mesh nodes remove`: Remove a node.
 
-## Deployment
+## Infrastructure & Security
 
+- `kosatka-mesh host status`: Show real-time host metrics (CPU, RAM, Disk, Temp) for all nodes.
+- `kosatka-mesh host clean [--node-id ID]`: Trigger manual host cleanup (Docker prune, logs) on all or specific nodes.
+- `kosatka-mesh dns-setup --provider PROV --base-domain DOMAIN`: Configure automated DNS/SSL (currently supports `beget`, `manual`).
+
+## Deployment
+...
 - `kosatka-mesh deploy`: Run Ansible playbooks for infrastructure setup.

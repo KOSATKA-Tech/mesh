@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    networks:
+      - kosatka-net
+
+  certbot:
+    image: certbot/certbot
+    restart: always
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
+networks:
+  kosatka-net:
+    external: true
+    name: {{ 'kosatka-master-net' if 'master' in group_names else 'kosatka-agent-net' }}
+
+volumes:
+  certbot-etc:
+  certbot-var:
+  webroot:

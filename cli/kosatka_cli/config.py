@@ -11,6 +11,10 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 class Config(BaseModel):
     base_url: str = "http://localhost:8000"
     api_key: Optional[str] = None
+    dns_provider: str = "manual"
+    beget_login: Optional[str] = None
+    beget_api_key: Optional[str] = None
+    base_domain: Optional[str] = None  # e.g. ub.kosatka.tech
 
 
 def load_config() -> Config:

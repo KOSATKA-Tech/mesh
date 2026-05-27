@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException
 
 from .config import settings
 from .docs import router as docs_router
+from .host_manager import HostManager
 from .installer import SmartProvisioner
 from .metrics import MetricsCollector
 from .protector import HeavyweightProtector
@@ -49,6 +50,9 @@ provider = get_provider()
 # Initialize metrics collector
 metrics_collector = MetricsCollector()
 
+# Initialize host manager
+host_manager = HostManager()
+
 # Initialize shaper
 shaper = TrafficShaper(settings.wg_interface, settings.shaping_total_rate)
 
@@ -84,6 +88,9 @@ async def _startup():
     # Startup logic
     logger.info(f"Starting Kosatka Agent. Provider: {settings.provider_type}")
 
+    # Start host manager
+    host_manager.start()
+
     if relay_provider:
         try:
             await relay_provider.start()
@@ -111,6 +118,7 @@ async def _startup():
 async def _shutdown():
     # Shutdown logic
     logger.info("Kosatka Agent shutting down")
+    await host_manager.stop()
     await protector.stop()
     if settings.shaping_enabled:
         await shaper.cleanup_shaping()
@@ -139,6 +147,12 @@ async def health():
         "provider": settings.provider_type,
         "metrics": metrics_collector.get_smoothed_metrics(),
     }
+
+
+@app.post("/host/clean", dependencies=[Depends(get_api_key)])
+async def host_clean():
+    await host_manager.cleanup()
+    return {"status": "cleanup_started"}
 
 
 @app.get("/clients", dependencies=[Depends(get_api_key)])

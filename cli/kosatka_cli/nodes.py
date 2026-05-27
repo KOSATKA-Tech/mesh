@@ -5,7 +5,9 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from . import config
 from .api import APIClient
+from .dns import get_dns_provider
 
 app = typer.Typer(help="Manage Kosatka nodes")
 console = Console()
@@ -59,7 +61,33 @@ async def _register(
     upstream_id: int | None = None,
 ):
     client = APIClient()
+    cfg = config.load_config()
     try:
+        # DNS Automation
+        if cfg.base_domain:
+            # Generate a sub-domain based on node name
+            # e.g. node1 -> node1.ub.kosatka.tech
+            full_domain = f"{name.lower()}.{cfg.base_domain.strip('.')}"
+            dns = get_dns_provider(cfg.model_dump())
+
+            # Extract IP from address (it might be http://IP or just IP)
+            import urllib.parse
+
+            parsed = urllib.parse.urlparse(address)
+            ip_only = (
+                parsed.hostname
+                or address.replace("http://", "").replace("https://", "").split(":")[0]
+            )
+
+            with console.status(f"[bold green]Provisioning DNS record for {full_domain}..."):
+                success = await dns.create_a_record(full_domain, ip_only)
+                if success:
+                    console.print(f"[green]DNS record created: {full_domain} -> {ip_only}[/green]")
+                    # Use the domain as the address for API calls (default to https if SSL is expected)
+                    address = f"https://{full_domain}"
+                else:
+                    console.print("[red]Failed to create DNS record automatically.[/red]")
+
         # Interactive role selection if not provided
         if not role:
             role = typer.prompt(

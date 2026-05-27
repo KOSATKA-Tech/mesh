@@ -26,8 +26,29 @@ class MetricsCollector:
         return alpha * current_value + (1 - alpha) * prev_ema
 
     def get_smoothed_metrics(self):
+        # Memory
+        mem = psutil.virtual_memory()
+        # Disk
+        disk = psutil.disk_usage("/")
+
+        # Temperature (Best effort)
+        temp = None
+        try:
+            temps = psutil.sensors_temperatures()
+            if temps:
+                # Use first available core temp or package temp
+                for name, entries in temps.items():
+                    if entries:
+                        temp = entries[0].current
+                        break
+        except Exception:
+            pass
+
         return {
             "cpu_usage_percent": round(self.cpu_ema, 2) if self.cpu_ema is not None else 0.0,
+            "memory_usage_percent": mem.percent,
+            "disk_usage_percent": disk.percent,
+            "temperature": temp,
             "rx_bps": round(self.rx_bps_ema, 2) if self.rx_bps_ema is not None else 0.0,
             "tx_bps": round(self.tx_bps_ema, 2) if self.tx_bps_ema is not None else 0.0,
         }

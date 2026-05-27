@@ -1,0 +1,43 @@
+---
+- name: Create proxy directory
+  file:
+    path: /opt/kosatka/proxy
+    state: directory
+    mode: '0755'
+
+- name: Create nginx config directory
+  file:
+    path: /opt/kosatka/proxy/nginx
+    state: directory
+
+- name: Deploy Nginx configuration
+  template:
+    src: nginx.conf.j2
+    dest: /opt/kosatka/proxy/nginx/nginx.conf
+
+- name: Deploy Docker Compose for Proxy
+  template:
+    src: docker-compose.proxy.yml.j2
+    dest: /opt/kosatka/proxy/docker-compose.yml
+
+- name: Start Proxy containers
+  docker_compose:
+    project_src: /opt/kosatka/proxy
+    state: present
+    pull: yes
+
+- name: Check if certificate exists
+  stat:
+    path: /etc/letsencrypt/live/{{ node_domain }}/fullchain.pem
+  register: cert_file
+  delegate_to: "{{ inventory_hostname }}"
+
+- name: Obtain initial certificate
+  command: >
+    docker-compose -f /opt/kosatka/proxy/docker-compose.yml run --rm certbot
+    certonly --webroot -w /var/www/certbot
+    --email admin@{{ node_domain }}
+    --agree-tos --no-eff-email
+    -d {{ node_domain }}
+  when: not cert_file.stat.exists
+  notify: restart nginx

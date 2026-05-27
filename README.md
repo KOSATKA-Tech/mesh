@@ -21,6 +21,9 @@
 - **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment and installs necessary binaries (**sing-box**, WireGuard).
 - **Dynamic Traffic Shaping**: Self-protecting nodes. Automatically detects and throttles "heavy hitters" to preserve performance on low-end VPS.
 - **Trend-Aware Load Balancing**: Intelligent node selection based on real-time resource utilization trends (CPU/Bandwidth).
+- **Automated SSL & DNS**: Integrated Nginx + Let's Encrypt automation for all nodes via CLI & Ansible (Beget API support).
+- **Host Security Hardening**: Built-in UFW firewall and Fail2Ban protection configured automatically during deployment.
+- **Self-Healing Infrastructure**: Automated daily Docker system pruning and resource monitoring (CPU, RAM, Disk, Temp).
 - **Protected Analytics Dashboard**: Real-time visualization of the entire network's health and load.
 
 ---
@@ -44,6 +47,13 @@ Build arbitrary length server chains to bypass censorship.
 - **Multi-Hop**: Direct traffic through multiple jurisdictions before exiting to the internet.
 - **Cycle Detection**: The Master node prevents invalid or circular topologies automatically.
 
+### 4. Infrastructure Security & Monitoring
+Kosatka Mesh doesn't just manage VPN protocols; it protects the underlying hosts:
+- **Firewall Isolation**: Automatically closes all non-essential ports via UFW, leaving only SSH and VPN traffic open.
+- **Brute-force Protection**: Fail2Ban monitoring for SSH access with moderate hardening rules.
+- **Resource Alerts**: Critical alerts sent to Telegram if a node goes offline, runs out of disk space, or exceeds temperature limits.
+- **Auto-Cleanup**: Daily automated `docker system prune` ensures the host remains tidy and efficient.
+
 ---
 
 ## 🛠 Installation & Startup
@@ -56,7 +66,10 @@ git clone https://github.com/6dba/mesh.git && cd mesh
 uv venv && source .venv/bin/activate
 uv pip install -e .
 
-# 2. Run Master
+# 2. Setup DNS (Optional, for HTTPS automation)
+kosatka-mesh dns-setup --provider beget --base-domain ub.kosatka.tech
+
+# 3. Run Master
 cp .env.master.example .env
 kosatka-mesh master run --port 8000
 
@@ -80,6 +93,16 @@ docker compose -f docker-compose.master.yml up -d --build
 cp .env.agent.example .env.agent
 $EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, etc.
 docker compose -f docker-compose.agent.yml up -d --build
+```
+
+### Node Maintenance & Status
+Monitor your infrastructure health in real-time (CPU, RAM, Disk, Temp):
+```bash
+kosatka-mesh host status
+```
+Trigger manual cleanup (Docker prune, log rotation) across the mesh:
+```bash
+kosatka-mesh host clean
 ```
 
 ---

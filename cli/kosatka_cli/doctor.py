@@ -41,3 +41,23 @@ async def run_diagnostics():
             console.print("[green]✓ API authentication successful[/green]")
         except Exception as e:
             console.print(f"[red]✗ API authentication failed: {e}[/red]")
+
+    # 4. Check Nodes Host Status
+    console.print("[yellow]Checking nodes host status...[/yellow]")
+    api = APIClient()
+    try:
+        nodes = await api.list_nodes()
+        for node in nodes:
+            try:
+                metrics = await api.request("GET", f"/nodes/{node['id']}/host/metrics")
+                disk = metrics.get("disk_usage_percent", 0.0)
+                if disk > 90:
+                    console.print(
+                        f"[red]✗ Node '{node['name']}' has low disk space: {disk}% used[/red]"
+                    )
+                else:
+                    console.print(f"[green]✓ Node '{node['name']}' host is healthy[/green]")
+            except Exception:
+                console.print(f"[red]✗ Cannot fetch host metrics for node '{node['name']}'[/red]")
+    except Exception as e:
+        console.print(f"[red]✗ Cannot list nodes: {e}[/red]")

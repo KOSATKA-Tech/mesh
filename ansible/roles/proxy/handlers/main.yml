@@ -1,0 +1,8 @@
+---
+- name: restart nginx
+  docker_compose:
+    project_src: /opt/kosatka/proxy
+    state: present
+    restarted: yes
+    services:
+      - nginx

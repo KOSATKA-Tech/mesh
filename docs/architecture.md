@@ -254,7 +254,7 @@ rotation cheap — revoking a leaked agent key affects only that node.
 | `AGENT_API_KEY`                     | agent     | Inbound auth for the agent's API.      |
 | `AGENT_PROVIDER_TYPE`               | agent     | `wireguard` / `awg` / `marzban` / `xray`. |
 | `AGENT_MARZBAN_*`                   | agent     | Marzban-specific provider creds.       |
-* `KOSATKA_MASTER_URL`                | scripts   | Used by `install.sh` / register flows. |
+| `KOSATKA_MASTER_URL`                | scripts   | Used by `install.sh` / register flows. |
 
 See [`.env.master.example`](../.env.master.example) and
 [`.env.agent.example`](../.env.agent.example) for the canonical
@@ -262,26 +262,8 @@ templates.
 
 ---
 
-## 10. Host Security & Hardening
+## 9. Performance notes
 
-Kosatka Mesh includes an automated security hardening layer applied during deployment:
-- **UFW (Firewall)**: All nodes are configured to reject all incoming traffic except for essential services: SSH (22), API ports (8000/8001), and VPN ports (Wireguard 51820, Hysteria2 443, TUIC 8443).
-- **Fail2Ban**: Moderate SSH protection is enabled by default to prevent brute-force attacks.
-- **Docker Management**: System-wide Docker log rotation is enforced to prevent disk exhaustion.
-
----
-
-## 11. Monitoring & Self-Healing
-
-The system proactively monitors host resources:
-- **Real-time Metrics**: Agents gather CPU, RAM, Disk, and Temperature data.
-- **Auto-Cleanup**: Agents perform a daily `docker system prune` to remove dangling images and temporary data.
-- **Alerting Pipeline**: The Master node evaluates metrics and emits critical alerts (e.g., node offline, high CPU) to a shared database, which is monitored by the connected bot.
-
----
-
-## 12. Performance notes
-...
 * `sync_all_nodes` probes agents **in parallel** — see PR #5.
 * Master's HTTP client to agents is `httpx.AsyncClient` (connection
   pooling + HTTP/2) created per request; if you grow past ~50 active

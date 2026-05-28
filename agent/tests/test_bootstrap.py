@@ -88,6 +88,10 @@ async def test_install_marzban_plugin():
 async def test_bootstrap_provider_all():
     providers = {"wireguard": "wireguard", "awg": "amneziawg", "xray": "xray", "marzban": "marzban"}
     for p, func in providers.items():
-        with patch(f"kosatka_agent.bootstrap.install_{func}", AsyncMock()) as mock_install:
+        with (
+            patch(f"kosatka_agent.bootstrap.install_{func}", AsyncMock()) as mock_install,
+            patch("kosatka_agent.bootstrap.ensure_apt_packages", AsyncMock()) as mock_apt,
+        ):
             await bootstrap.bootstrap_provider(p)
             assert mock_install.called
+            assert mock_apt.called

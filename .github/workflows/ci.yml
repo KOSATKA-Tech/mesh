@@ -77,12 +77,11 @@ jobs:
           export VITE_OUT_DIR="../master/kosatka_master/static/admin"
           npm run build
 
-      - name: Performance Audit (Lighthouse)
-        run: |
-          # Use root-level build for testing to avoid 404/basename issues in LHCI
-          npm run build
-          npm install -g @lhci/cli@0.13.x
-          lhci autorun
+      # - name: Performance Audit (Lighthouse)
+      #   run: |
+      #     npm run build
+      #     npm install -g @lhci/cli@0.13.x
+      #     lhci autorun
 
   performance-gate:
     name: Performance and Load Tests

@@ -66,6 +66,7 @@ kosatka-mesh agent join --master https://master.yourdomain.com --key <API_KEY> -
 | Guide | Description |
 | :--- | :--- |
 | [**Architecture Overview**](./docs/ARCHITECTURE.md) | Detailed look at how Master, Agents, and Routing work. |
+| [**Docker Deployment Guide**](./docs/DOCKER_DEPLOYMENT.md) | Step-by-step setup for Master, Relays, and Exit nodes using Docker. |
 | [**CLI Reference**](./docs/cli.md) | Full list of commands for node, host, and DNS management. |
 | [**Dynamic Routing Guide**](./docs/ARCHITECTURE.md#5-dynamic-routing) | How to build multi-hop chains and HA clusters. |
 | [**Security Policy**](./docs/ARCHITECTURE.md#10-host-security--hardening) | Deep dive into UFW, Fail2Ban, and DDoS protections. |

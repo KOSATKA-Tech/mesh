@@ -2,6 +2,7 @@ import typer
 from rich.console import Console
 
 from . import config, deploy, host, monitor, nodes
+from .join import agent_join
 
 app = typer.Typer(help="Kosatka Mesh CLI - Manage your global VPN mesh")
 console = Console()
@@ -15,6 +16,17 @@ app.add_typer(monitor.app, name="monitor")
 app.add_typer(host.app, name="host")
 app.add_typer(master_app, name="master")
 app.add_typer(agent_app, name="agent")
+
+
+@agent_app.command("join")
+def join(
+    master: str = typer.Option(..., "--master", "-m", help="Master API URL"),
+    key: str = typer.Option(..., "--key", "-k", help="Admin API Key"),
+    role: str = typer.Option("standalone", "--role", "-r", help="Node role"),
+    name: str = typer.Option(None, "--name", "-n", help="Node name"),
+):
+    """Magic command to join a new node to the mesh network"""
+    agent_join(master, key, role, name)
 
 
 @master_app.command("run")

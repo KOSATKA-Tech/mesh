@@ -1,10 +1,14 @@
 ---
-- name: Configure Kernel DDoS protection (SYN cookies)
+- name: Configure Kernel DDoS protection (SYN cookies and ICMP ignore)
   sysctl:
-    name: net.ipv4.tcp_syncookies
-    value: '1'
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
     state: present
     reload: yes
+  loop:
+    - { key: 'net.ipv4.tcp_syncookies', value: '1' }
+    - { key: 'net.ipv4.conf.all.rp_filter', value: '1' } # Prevent IP spoofing
+    - { key: 'net.ipv4.icmp_echo_ignore_broadcasts', value: '1' }
 
 - name: Install security packages
   apt:
@@ -67,15 +71,38 @@
     - "'master' not in group_names"
     - (kosatka_provider_type | default('awg')) in ['awg', 'amneziawg', 'wireguard', 'sing-box', 'hysteria2', 'tuic']
 
-- name: Apply advanced iptables DDoS protection for VPN ports
+- name: Apply basic iptables hardening (Invalid packets)
+  iptables:
+    chain: INPUT
+    ctstate: INVALID
+    jump: DROP
+    comment: "Drop malformed/invalid packets"
+
+- name: Allow established connections to bypass rate limits
+  iptables:
+    chain: INPUT
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    comment: "Fast-track established traffic"
+
+- name: Limit concurrent SSH connections per IP
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: 22
+    connlimit_above: 5
+    jump: DROP
+    comment: "Max 5 concurrent SSH per IP"
+
+- name: Apply advanced iptables DDoS protection for VPN ports (UDP)
   iptables:
     chain: INPUT
     protocol: udp
     destination_port: "{{ item }}"
     ctstate: NEW
     jump: DROP
-    limit: 20/second
-    limit_burst: 50
+    limit: 25/second
+    limit_burst: 100
     comment: "Rate limit new VPN handshakes"
   loop:
     - "{{ awg_listen_port | default(51820) }}"

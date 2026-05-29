@@ -1,3 +1,4 @@
+import logging
 import os
 import tarfile
 import tempfile
@@ -5,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import BackgroundTasks, Depends, FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401
@@ -18,6 +19,8 @@ from .http_client import http_client_lifespan
 from .instances import host_monitor
 from .scheduler import scheduler, setup_scheduler
 from .security import get_api_key
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -43,21 +46,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Kosatka Mesh Master", lifespan=lifespan)
-
-# Mount static directory for install.sh
-static_dir = Path(__file__).parent / "static"
-static_dir.mkdir(exist_ok=True)
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+setup_rate_limiting(app)
 
 
 def _resolve_ansible_dir() -> Path:
-    """Locate the ansible/ tree regardless of how the master is deployed.
-
-    The source tree checkout has ``ansible/`` at the repo root (three
-    parents up from this module), while the Docker image copies it to
-    ``/app/ansible`` and sets ``KOSATKA_ANSIBLE_DIR`` accordingly. We
-    prefer the explicit env var, then fall back to the dev layout.
-    """
+    """Locate the ansible/ tree regardless of how the master is deployed."""
     explicit = os.environ.get("KOSATKA_ANSIBLE_DIR")
     if explicit and Path(explicit).is_dir():
         return Path(explicit)
@@ -67,12 +60,7 @@ def _resolve_ansible_dir() -> Path:
     docker_layout = Path("/app/ansible")
     if docker_layout.is_dir():
         return docker_layout
-    # Surface a clear error instead of silently packaging an empty tar.
-    raise RuntimeError(
-        "Unable to locate the ansible/ directory. Set KOSATKA_ANSIBLE_DIR "
-        "to an absolute path or ensure the directory is mounted into the "
-        "container."
-    )
+    raise RuntimeError("Unable to locate the ansible/ directory.")
 
 
 @app.get("/api/v1/static/ansible.tar.gz")
@@ -80,33 +68,36 @@ async def download_ansible_playbooks(
     background_tasks: BackgroundTasks,
     _: str = Depends(get_api_key),
 ):
-    """Pack the ansible directory and serve it as a tarball.
-
-    Requires the same ``X-Kosatka-Key`` header as the rest of ``/api/v1/*``.
-    The ansible tree contains the agent self-bootstrap playbooks and
-    must not be downloadable by anonymous clients on the public internet.
-    ``install.sh`` forwards the operator's ``--token`` value as the
-    header so the existing bootstrap flow keeps working.
-    """
+    """Pack the ansible directory and serve it as a tarball."""
     ansible_dir = _resolve_ansible_dir()
-
     fd, temp_path = tempfile.mkstemp(suffix=".tar.gz")
     os.close(fd)
-
     with tarfile.open(temp_path, "w:gz") as tar:
         tar.add(str(ansible_dir), arcname=".")
-
     background_tasks.add_task(os.remove, temp_path)
-
     return FileResponse(temp_path, filename="ansible.tar.gz")
 
 
-app = FastAPI(title="Kosatka Mesh Master", lifespan=lifespan)
-setup_rate_limiting(app)
-
+# Include Routers
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(subscriptions_public_router, prefix="/sub")
 app.include_router(dashboard_router)
+
+# Serve Admin UI
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+    @app.get("/admin/{full_path:path}")
+    async def serve_admin(full_path: str):
+        return FileResponse(static_dir / "index.html")
+
+    @app.get("/")
+    async def redirect_to_admin():
+        return RedirectResponse(url="/admin/")
+
+else:
+    logger.warning(f"Static directory {static_dir} not found. UI will not be served.")
 
 
 @app.get("/health")

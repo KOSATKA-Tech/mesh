@@ -97,6 +97,14 @@ async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
     return {"status": "success"}
 
 
+@router.get("/alerts")
+async def get_system_alerts(db: AsyncSession = Depends(get_db)):
+    from ...models.alert import SystemAlert
+
+    result = await db.execute(select(SystemAlert).order_by(SystemAlert.created_at.desc()).limit(50))
+    return result.scalars().all()
+
+
 @router.get("/{node_id}/health/")
 async def get_node_health(node_id: int, db: AsyncSession = Depends(get_db)) -> Dict[str, Any]:
     """Probe agent health live. The SDK and CLI both call this endpoint."""

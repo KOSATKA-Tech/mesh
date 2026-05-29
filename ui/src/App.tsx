@@ -26,7 +26,7 @@ function App() {
   return (
     <QueryClientProvider client={new QueryClient()}>
       <AuthProvider>
-        <Router>
+        <Router basename="/admin">
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<Setup />} />

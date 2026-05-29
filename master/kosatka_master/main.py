@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import models  # noqa: F401
 from .api.v1.dashboard import router as dashboard_router
+from .api.v1.limiter import setup_rate_limiting
 from .api.v1.router import api_router
 from .api.v1.subscriptions import public_router as subscriptions_public_router
 from .database import Base, engine
@@ -99,6 +100,9 @@ async def download_ansible_playbooks(
 
     return FileResponse(temp_path, filename="ansible.tar.gz")
 
+
+app = FastAPI(title="Kosatka Mesh Master", lifespan=lifespan)
+setup_rate_limiting(app)
 
 app.include_router(api_router, prefix="/api/v1")
 app.include_router(subscriptions_public_router, prefix="/sub")

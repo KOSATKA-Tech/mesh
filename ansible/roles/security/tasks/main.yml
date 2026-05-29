@@ -1,4 +1,11 @@
 ---
+- name: Configure Kernel DDoS protection (SYN cookies)
+  sysctl:
+    name: net.ipv4.tcp_syncookies
+    value: '1'
+    state: present
+    reload: yes
+
 - name: Install security packages
   apt:
     name:
@@ -59,6 +66,21 @@
   when:
     - "'master' not in group_names"
     - (kosatka_provider_type | default('awg')) in ['awg', 'amneziawg', 'wireguard', 'sing-box', 'hysteria2', 'tuic']
+
+- name: Apply advanced iptables DDoS protection for VPN ports
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_port: "{{ item }}"
+    ctstate: NEW
+    jump: DROP
+    limit: 20/second
+    limit_burst: 50
+    comment: "Rate limit new VPN handshakes"
+  loop:
+    - "{{ awg_listen_port | default(51820) }}"
+    - "8443"
+  when: "'master' not in group_names"
 
 - name: Enable UFW
   ufw:

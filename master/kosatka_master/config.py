@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:///./kosatka.db"
     webhook_url: str | None = None
     webhook_secret: str = "default-webhook-secret"
+
+    # SMTP Settings for notifications
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "noreply@kosatka.tech"
+
     sync_interval: int = 60
     expiration_check_interval: int = 300
     # Geosite re-import cadence. v2fly/domain-list-community lands a few

@@ -8,6 +8,7 @@ from .config import settings
 from .docs import router as docs_router
 from .host_manager import HostManager
 from .installer import SmartProvisioner
+from .limiter import setup_rate_limiting
 from .metrics import MetricsCollector
 from .protector import HeavyweightProtector
 from .providers.awg import AmneziaWGProvider
@@ -135,6 +136,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Kosatka Mesh Agent", lifespan=lifespan)
+setup_rate_limiting(app)
 
 # Include documentation router
 app.include_router(docs_router)

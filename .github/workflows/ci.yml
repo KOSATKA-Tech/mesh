@@ -72,10 +72,15 @@ jobs:
         run: npm test
 
       - name: Build UI
-        run: npm run build
+        run: |
+          export VITE_BASE_URL="/admin/"
+          export VITE_OUT_DIR="../master/kosatka_master/static/admin"
+          npm run build
 
       - name: Performance Audit (Lighthouse)
         run: |
+          # Use root-level build for testing to avoid 404/basename issues in LHCI
+          npm run build
           npm install -g @lhci/cli@0.13.x
           lhci autorun
 

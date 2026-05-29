@@ -23,10 +23,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  const basename = import.meta.env.VITE_BASE_URL || '/';
+  
   return (
     <QueryClientProvider client={new QueryClient()}>
       <AuthProvider>
-        <Router basename="/admin">
+        <Router basename={basename}>
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/setup" element={<Setup />} />

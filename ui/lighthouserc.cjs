@@ -1,8 +1,8 @@
 module.exports = {
   ci: {
     collect: {
-      staticDistDir: '../master/kosatka_master/static',
-      url: ['http://localhost/admin/'],
+      staticDistDir: './dist',
+      url: ['http://localhost/'],
       settings: {
         chromeFlags: '--no-sandbox --headless --disable-gpu',
       },

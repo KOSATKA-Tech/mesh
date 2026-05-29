@@ -19,7 +19,7 @@ class MeshMasterUser(HttpUser):
 
     @task(2)
     def get_alerts(self):
-        self.client.get("/api/v1/nodes/alerts/")
+        self.client.get("/api/v1/nodes/alerts")
 
     @task(1)
     def check_health(self):

@@ -40,6 +40,14 @@ async def get_nodes(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get("/alerts")
+async def get_system_alerts(db: AsyncSession = Depends(get_db)):
+    from ...models.alert import SystemAlert
+
+    result = await db.execute(select(SystemAlert).order_by(SystemAlert.created_at.desc()).limit(50))
+    return result.scalars().all()
+
+
 @router.get("/{node_id}", response_model=NodeSchema)
 async def get_node(node_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Node).where(Node.id == node_id))
@@ -95,14 +103,6 @@ async def delete_node(node_id: int, db: AsyncSession = Depends(get_db)):
     await db.delete(node)
     await db.commit()
     return {"status": "success"}
-
-
-@router.get("/alerts")
-async def get_system_alerts(db: AsyncSession = Depends(get_db)):
-    from ...models.alert import SystemAlert
-
-    result = await db.execute(select(SystemAlert).order_by(SystemAlert.created_at.desc()).limit(50))
-    return result.scalars().all()
 
 
 @router.get("/{node_id}/health/")

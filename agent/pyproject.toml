@@ -12,6 +12,7 @@ dependencies = [
     "python-multipart",
     "psutil",
     "slowapi",
+    "respx",
 ]
 
 [build-system]

@@ -25,6 +25,7 @@ dependencies = [
     "psutil",
     "slowapi",
     "passlib[bcrypt]",
+    "respx",
 ]
 
 [build-system]

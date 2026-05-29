@@ -1409,6 +1409,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
+    { name = "respx" },
     { name = "slowapi" },
     { name = "uvicorn" },
 ]
@@ -1421,6 +1422,7 @@ requires-dist = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
+    { name = "respx" },
     { name = "slowapi" },
     { name = "uvicorn" },
 ]
@@ -1468,6 +1470,7 @@ dependencies = [
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
     { name = "pyyaml" },
+    { name = "respx" },
     { name = "slowapi" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn" },
@@ -1488,6 +1491,7 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"] },
     { name = "python-multipart" },
     { name = "pyyaml" },
+    { name = "respx" },
     { name = "slowapi" },
     { name = "sqlalchemy", extras = ["asyncio"] },
     { name = "uvicorn" },
@@ -1506,6 +1510,7 @@ dependencies = [
     { name = "passlib", extra = ["bcrypt"] },
     { name = "psutil" },
     { name = "python-jose", extra = ["cryptography"] },
+    { name = "respx" },
     { name = "slowapi" },
 ]
 
@@ -1532,6 +1537,7 @@ requires-dist = [
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "psutil", specifier = ">=7.2.2" },
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.3.0" },
+    { name = "respx", specifier = ">=0.21.1" },
     { name = "slowapi", specifier = ">=0.1.9" },
 ]
 

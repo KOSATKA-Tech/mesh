@@ -1,172 +1,97 @@
 # 🐋 KOSATKA Mesh
+
 <div align="center">
 
 ![KOSATKA Mesh](./assets/kosatka-mesh.png)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Python: 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Docker: Ready](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
 
-**KOSATKA Mesh** is a professional-grade centralized control plane for managing a global distributed VPN infrastructure through a unified API. Built for stealth, scalability, and an effortless user experience.
+**Commercial-Grade Global VPN Mesh Infrastructure**
+
+[Visual Dashboard](#-visual-control-plane) • [Security](#-infrastructure-hardening) • [Quick Start](#-quick-start) • [Documentation](#-comprehensive-documentation)
 
 </div>
 
 ---
 
-## 🚀 Key Features
+## 🌟 Key Features
 
-- **Unified CLI & API**: Control your entire mesh via the `kosatka-mesh` command or a RESTful API.
-- **Universal Subscriptions**: Effortless connection on any device (iOS, Android, Windows, TV) via **Clash-compatible** dynamic configurations.
-- **Multi-Hop Stealth Chaining**: Build deep server chains (e.g., `Restricted -> Intermediate -> Exit`) with **Xray Reality** obfuscation.
-- **Modern High-Speed Protocols**: Support for **Hysteria2** and **TUIC** (QUIC-based) for lightning-fast performance even on lossy networks.
-- **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment and installs necessary binaries (**sing-box**, WireGuard).
-- **Dynamic Traffic Shaping**: Self-protecting nodes. Automatically detects and throttles "heavy hitters" to preserve performance on low-end VPS.
-- **Trend-Aware Load Balancing**: Intelligent node selection based on real-time resource utilization trends (CPU/Bandwidth).
-- **Dynamic Multi-Hop Routing**: Relays can now have multiple upstreams with automatic failover and load balancing.
-- **Automated SSL & DNS**: Integrated Nginx + Let's Encrypt automation for all nodes via CLI & Ansible (Beget API support).
-- **Host Security Hardening**: Built-in UFW firewall and Fail2Ban protection configured automatically during deployment.
-- **Self-Healing Infrastructure**: Automated daily Docker system pruning and resource monitoring (CPU, RAM, Disk, Temp).
-- **Protected Analytics Dashboard**: Real-time visualization of the entire network's health and load.
+*   **Multi-Hop Stealth Chaining**: Build deep server chains (e.g., `Restricted -> Intermediate -> Exit`) with **Xray Reality** to bypass state-level censorship.
+*   **Dynamic Routing & Failover**: Relays automatically detect healthy upstreams and route traffic based on the lowest latency (`leastPing`).
+*   **Automated SSL & DNS**: One-click HTTPS provisioning for all nodes via **Beget API** and **Let's Encrypt**.
+*   **Visual Control Plane**: Interactive Miro-style network graph to manage topology with drag-and-drop.
+*   **Infrastructure Hardening**: Automated **UFW Firewall**, **Fail2Ban**, and multi-layered **DDoS protection**.
+*   **Self-Healing**: Real-time monitoring of CPU, RAM, Disk, and Temp with automated system pruning.
 
 ---
 
-## 🏗 Architectural Features
+## 🎨 Visual Control Plane
 
-### 1. Universal Connectivity (Clash Subscriptions)
-Kosatka Mesh acts as a subscription provider. Each client gets a unique token that provides a dynamic, self-updating configuration compatible with popular apps like **Clash Verge, Stash, Shadowrocket, and Clash Meta**.
-- **Smart Naming**: Nodes are automatically labeled with flags and country names (e.g., `🇳🇱 Netherlands [Premium]`).
-- **Auto-Selection**: Configurations include "Auto Select" groups that pick the lowest latency node automatically.
-- **Privacy**: The client config only sees entry/exit nodes; internal multi-hop topology is fully concealed.
+Kosatka Mesh features a modern, aesthetic, and fast Admin Panel (PWA) served directly by the Master node.
 
-### 2. Unified Transport (Sing-box Core)
-We have unified our data plane on the **sing-box** core. A single binary on the agent handles all modern protocols:
-- **Hysteria2 / TUIC**: Exceptional performance on mobile networks and unstable links.
-- **VLESS + Reality**: State-of-the-art obfuscation that makes VPN traffic indistinguishable from HTTPS to trusted domains.
-- **WireGuard**: Industry-standard high-speed VPN in userspace.
+*   **Network Map**: Drag edges to connect nodes and re-route traffic in real-time.
+*   **Fleet Overview**: Health stats (CPU/RAM/Temp) for every node in the mesh.
+*   **Mobile Ready**: Fully responsive design with **"Add to Home Screen"** support for iOS and Android.
+*   **Configuration**: Centralized management for SMTP, DNS, and Alerting thresholds.
 
-### 3. Advanced Stealth Infrastructure
-Build arbitrary length server chains to bypass censorship.
-- **Multi-Hop**: Direct traffic through multiple jurisdictions before exiting to the internet.
-- **Cycle Detection**: The Master node prevents invalid or circular topologies automatically.
-
-### 4. Infrastructure Security & Monitoring
-Kosatka Mesh doesn't just manage VPN protocols; it protects the underlying hosts:
-- **Firewall Isolation**: Automatically closes all non-essential ports via UFW, leaving only SSH and VPN traffic open.
-- **Brute-force Protection**: Fail2Ban monitoring for SSH access with moderate hardening rules.
-- **Resource Alerts**: Critical alerts sent to Telegram if a node goes offline, runs out of disk space, or exceeds temperature limits.
-- **Auto-Cleanup**: Daily automated `docker system prune` ensures the host remains tidy and efficient.
+Access it at: `https://<your-master-domain>/admin/`
 
 ---
 
-## 🛠 Installation & Startup
+## 🛡 Infrastructure Hardening
 
-### Local Development (Single-Host)
+Security is configured automatically during deployment via Ansible:
+- **Default-Deny Firewall**: Only essential ports (SSH, API, VPN) are open.
+- **Connection Limiting**: Advanced `iptables` rules protect against handshake exhaustion floods.
+- **DDoS Mitigation**: Kernel-level SYN-flood protection and application-level Rate Limiting.
+- **Docker Log Rotation**: Prevents disk exhaustion from container logs.
 
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
 ```bash
-# 1. Clone & Setup
+# Clone and setup CLI
 git clone https://github.com/6dba/mesh.git && cd mesh
-uv venv && source .venv/bin/activate
-uv pip install -e .
+uv pip install -e ./cli
 
-# 2. Setup DNS (Optional, for HTTPS automation)
+# Configure DNS (for automated HTTPS)
 kosatka-mesh dns-setup --provider beget --base-domain ub.kosatka.tech
-
-# 3. Run Master
-cp .env.master.example .env
-kosatka-mesh master run --port 8000
-
-# 3. Run Agent (in another terminal)
-kosatka-mesh agent run --port 8010
 ```
 
----
-
-## 🐳 Docker Deployment (Production)
-
-### Master Node Setup
+### 2. Deployment
 ```bash
-cp .env.master.example .env.master
-$EDITOR .env.master   # set KOSATKA_API_KEY, etc.
-docker compose -f docker-compose.master.yml up -d --build
+# Register and join a new node "magically"
+# Run this ON THE TARGET SERVER:
+kosatka-mesh agent join --master https://master.yourdomain.com --key <API_KEY> --role proxy
 ```
 
-### Agent Node Setup
+### 3. Maintenance
 ```bash
-cp .env.agent.example .env.agent
-$EDITOR .env.agent   # set AGENT_API_KEY, KOSATKA_MASTER_URL, etc.
-docker compose -f docker-compose.agent.yml up -d --build
-```
-
-### Node Maintenance & Status
-Monitor your infrastructure health in real-time (CPU, RAM, Disk, Temp):
-```bash
+# Check host health across the mesh
 kosatka-mesh host status
-```
-Trigger manual cleanup (Docker prune, log rotation) across the mesh:
-```bash
+
+# Manual system cleanup
 kosatka-mesh host clean
 ```
 
 ---
 
-## 📖 Usage Guides
+## 📖 Comprehensive Documentation
 
-### Getting a Subscription Link
-
-Each client has a subscription token. You can find it in the Master DB or via the CLI (coming soon). The URL format is:
-`http://<your-master-ip>:8000/sub/<token>`
-
-Simply paste this link into your favorite Clash-compatible app.
-
-### Setting up a Multi-Hop Chain
-
-1. **Register nodes**:
-   ```bash
-   # Add Exit Node (EU)
-   kosatka-mesh nodes add "Global-Exit" "http://exit-ip:8010" --role exit
-
-   # Add Intermediate Relay (KZ) pointing to EU
-   kosatka-mesh nodes add "Mid-Relay" "http://kz-ip:8010" --role proxy --upstream-id <EU_ID>
-
-   # Add Entry Proxy (Local) pointing to KZ
-   kosatka-mesh nodes add "Local-Entry" "http://local-ip:8010" --role proxy --upstream-id <MID_ID>
-   ```
-
-2. **Provision**:
-   ```bash
-   kosatka-mesh nodes provision "stealth-user" --protocol "stealth-wg"
-   ```
+| Guide | Description |
+| :--- | :--- |
+| [**Architecture Overview**](./docs/architecture.md) | Detailed look at how Master, Agents, and Routing work. |
+| [**CLI Reference**](./docs/cli.md) | Full list of commands for node, host, and DNS management. |
+| [**Dynamic Routing Guide**](./docs/architecture.md#5-dynamic-routing) | How to build multi-hop chains and HA clusters. |
+| [**Security Policy**](./docs/architecture.md#10-host-security--hardening) | Deep dive into UFW, Fail2Ban, and DDoS protections. |
+| [**API Reference**](./docs/api-reference.md) | Technical specs for REST API integration. |
+| [**Adding Providers**](./docs/adding-provider.md) | How to add support for new VPN protocols. |
 
 ---
-
-## 📦 SDK Integration (e.g., for Telegram Bots)
-
-```python
-import asyncio
-from KosatkaMesh import MeshClient
-
-async def main():
-    client = MeshClient(base_url="https://master.com", api_key="...")
-
-    # 1. Provision a profile
-    profile = await client.provision(name="user_1", protocol="hysteria2")
-
-    # 2. Get the universal subscription link for this client
-    # (Assuming you have the client object or external_id)
-    sub_url = f"https://master.com/sub/{profile.sub_token}"
-    print(f"Send this to the user: {sub_url}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
----
-
-## 📄 Documentation
-
-- [Architecture Overview](docs/architecture.md)
-- [API Reference](docs/api-reference.md)
-- [CLI Reference](docs/cli.md)
 
 ## ⚖️ License
-
 MIT License.
+_Powered by KOSATKA Infrastructure_ 🦈

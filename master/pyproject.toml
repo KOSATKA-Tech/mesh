@@ -24,6 +24,7 @@ dependencies = [
     "PyYAML",
     "psutil",
     "slowapi",
+    "passlib[bcrypt]",
 ]
 
 [build-system]

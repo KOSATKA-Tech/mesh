@@ -21,6 +21,7 @@
 - **Autonomous Smart Provisioner**: "Zero-touch" installation. The Agent autonomously detects the environment and installs necessary binaries (**sing-box**, WireGuard).
 - **Dynamic Traffic Shaping**: Self-protecting nodes. Automatically detects and throttles "heavy hitters" to preserve performance on low-end VPS.
 - **Trend-Aware Load Balancing**: Intelligent node selection based on real-time resource utilization trends (CPU/Bandwidth).
+- **Dynamic Multi-Hop Routing**: Relays can now have multiple upstreams with automatic failover and load balancing.
 - **Automated SSL & DNS**: Integrated Nginx + Let's Encrypt automation for all nodes via CLI & Ansible (Beget API support).
 - **Host Security Hardening**: Built-in UFW firewall and Fail2Ban protection configured automatically during deployment.
 - **Self-Healing Infrastructure**: Automated daily Docker system pruning and resource monitoring (CPU, RAM, Disk, Temp).

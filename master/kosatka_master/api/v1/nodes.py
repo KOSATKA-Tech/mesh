@@ -146,3 +146,72 @@ async def get_node_host_metrics(node_id: int, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=503, detail="Agent unreachable")
 
     return health_data.get("metrics", {})
+
+
+@router.post("/{node_id}/host/clean")
+async def clean_node_host(node_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Node).where(Node.id == node_id))
+    node = result.scalar_one_or_none()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    key = node.api_key or settings.effective_agent_api_key()
+    headers = {"X-Kosatka-Key": key}
+
+    import httpx
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                f"{node.address.rstrip('/')}/host/clean", headers=headers, timeout=10.0
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Failed to trigger cleanup on agent: {e}")
+
+
+@router.put("/{node_id}/upstreams")
+async def set_node_upstreams(
+    node_id: int, upstream_ids: list[int], db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Node).where(Node.id == node_id))
+    node = result.scalar_one_or_none()
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # Validate all upstreams exist
+    for uid in upstream_ids:
+        if uid == node_id:
+            raise HTTPException(status_code=400, detail="Node cannot be its own upstream")
+        u_res = await db.execute(select(Node).where(Node.id == uid))
+        if not u_res.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail=f"Upstream node {uid} not found")
+
+    # Update metadata
+    meta = dict(node.metadata_json or {})
+    meta["upstreams"] = upstream_ids
+    node.metadata_json = meta
+
+    # Also update the primary upstream_id for backward compatibility
+    if upstream_ids:
+        node.upstream_id = upstream_ids[0]
+    else:
+        node.upstream_id = None
+
+    await db.commit()
+
+    # Trigger dynamic provisioning
+    from kosatka_master.services.chain_manager import ChainManager
+
+    cm = ChainManager(db)
+    try:
+        await cm.provision_dynamic_relay(node)
+    except Exception as e:
+        # Don't fail the API call if push fails, but warn the user
+        return {
+            "status": "partially_updated",
+            "warning": f"State saved but failed to push to agent: {e}",
+        }
+
+    return {"status": "updated", "upstreams": upstream_ids}

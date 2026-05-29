@@ -71,6 +71,18 @@ class NodeManager:
                     # having the master figure out it's actually 'wireguard'.
                     node.provider_type = outcome["provider"]
 
+                # Autodiscovery: Capture relay credentials for chain building
+                if outcome.get("relay_info"):
+                    info = outcome["relay_info"]
+                    meta = dict(node.metadata_json or {})
+                    # Map Agent keys to Master canonical keys
+                    meta["relay_uuid"] = info.get("uuid")
+                    meta["relay_port"] = info.get("port")
+                    meta["reality_public_key"] = info.get("reality_public_key")
+                    meta["reality_dest"] = info.get("reality_dest")
+                    meta["reality_short_id"] = info.get("reality_short_id")
+                    node.metadata_json = meta
+
                 # Task 6: Collect metrics
                 metrics = outcome.get("metrics", {})
                 cpu_ema = metrics.get("cpu_usage_percent", 0.0)

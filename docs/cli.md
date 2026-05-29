@@ -26,8 +26,14 @@ uv pip install -e .
 - `kosatka-mesh nodes add NAME ADDRESS`: Register a new node.
 - `kosatka-mesh nodes remove`: Remove a node.
 
-## Infrastructure & Security
+## Routing & Upstreams (High Availability)
 
+- `kosatka-mesh nodes upstreams add NODE_ID UPSTREAM_ID`: Add a new upstream to a relay node.
+- `kosatka-mesh nodes upstreams remove NODE_ID UPSTREAM_ID`: Remove an upstream.
+- `kosatka-mesh nodes upstreams set NODE_ID ID1 ID2...`: Set the complete list of upstreams for a relay.
+
+## Infrastructure & Security
+...
 - `kosatka-mesh host status`: Show real-time host metrics (CPU, RAM, Disk, Temp) for all nodes.
 - `kosatka-mesh host clean [--node-id ID]`: Trigger manual host cleanup (Docker prune, logs) on all or specific nodes.
 - `kosatka-mesh dns-setup --provider PROV --base-domain DOMAIN`: Configure automated DNS/SSL (currently supports `beget`, `manual`).

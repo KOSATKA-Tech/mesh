@@ -173,9 +173,78 @@ async def _provision(name: str, protocol: str):
 
 
 @app.command("provision")
-def provision_client(
+def nodes_provision(
     name: str = typer.Argument(..., help="Name for the VPN profile"),
     protocol: str = typer.Option("amneziawg", help="VPN Protocol (amneziawg, wireguard, vless)"),
 ):
     """Find a node and provision a new VPN profile"""
     asyncio.run(_provision(name, protocol))
+
+
+# --- Upstream Management ---
+
+upstreams_app = typer.Typer(help="Manage node upstreams (for relays)")
+app.add_typer(upstreams_app, name="upstreams")
+
+
+async def _set_upstreams(node_id: int, upstream_ids: list[int]):
+    client = APIClient()
+    try:
+        res = await client.request("PUT", f"/nodes/{node_id}/upstreams", json=upstream_ids)
+        if res.get("status") == "updated":
+            console.print(f"[green]Successfully updated upstreams for node {node_id}[/green]")
+        elif res.get("status") == "partially_updated":
+            console.print(f"[yellow]Warning: {res.get('warning')}[/yellow]")
+        else:
+            console.print(f"[red]Failed to update upstreams: {res}[/red]")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+
+
+@upstreams_app.command("set")
+def upstreams_set(
+    node_id: int = typer.Argument(..., help="ID of the node to update"),
+    upstream_ids: list[int] = typer.Argument(..., help="List of upstream node IDs"),
+):
+    """Set the list of upstream nodes for a relay"""
+    asyncio.run(_set_upstreams(node_id, list(upstream_ids)))
+
+
+@upstreams_app.command("add")
+def upstreams_add(
+    node_id: int = typer.Argument(..., help="ID of the node to update"),
+    upstream_id: int = typer.Argument(..., help="ID of the upstream node to add"),
+):
+    """Add an upstream node to a relay's list"""
+
+    async def _add():
+        client = APIClient()
+        node = await client.request("GET", f"/nodes/{node_id}")
+        current = node.get("metadata_json", {}).get("upstreams", [])
+        if upstream_id not in current:
+            current.append(upstream_id)
+            await _set_upstreams(node_id, current)
+        else:
+            console.print("[yellow]Upstream already exists.[/yellow]")
+
+    asyncio.run(_add())
+
+
+@upstreams_app.command("remove")
+def upstreams_remove(
+    node_id: int = typer.Argument(..., help="ID of the node to update"),
+    upstream_id: int = typer.Argument(..., help="ID of the upstream node to remove"),
+):
+    """Remove an upstream node from a relay's list"""
+
+    async def _remove():
+        client = APIClient()
+        node = await client.request("GET", f"/nodes/{node_id}")
+        current = node.get("metadata_json", {}).get("upstreams", [])
+        if upstream_id in current:
+            current.remove(upstream_id)
+            await _set_upstreams(node_id, current)
+        else:
+            console.print("[yellow]Upstream not found.[/yellow]")
+
+    asyncio.run(_remove())

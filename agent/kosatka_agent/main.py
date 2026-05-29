@@ -142,11 +142,23 @@ app.include_router(docs_router)
 
 @app.get("/health/")
 async def health():
-    return {
+    data = {
         "status": "ok",
         "provider": settings.provider_type,
         "metrics": metrics_collector.get_smoothed_metrics(),
     }
+
+    # Include relay info for autodiscovery
+    if settings.node_role in ("proxy", "exit"):
+        data["relay_info"] = {
+            "uuid": settings.relay_uuid,
+            "port": settings.relay_port,
+            "reality_public_key": settings.reality_public_key,
+            "reality_dest": settings.reality_dest,
+            "reality_short_id": settings.reality_short_id,
+        }
+
+    return data
 
 
 @app.post("/host/clean", dependencies=[Depends(get_api_key)])
@@ -190,3 +202,13 @@ async def get_client_config(client_id: str):
 @app.get("/clients/{client_id}/stats", dependencies=[Depends(get_api_key)])
 async def get_client_stats(client_id: str):
     return await provider.get_client_stats(client_id)
+
+
+@app.post("/relay/config", dependencies=[Depends(get_api_key)])
+async def update_relay_config(config_data: dict):
+    if not relay_provider:
+        raise HTTPException(
+            status_code=400, detail="This node is not configured as a relay/exit node"
+        )
+    await relay_provider.update_config(config_data)
+    return {"status": "updated"}

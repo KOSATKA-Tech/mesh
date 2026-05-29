@@ -112,13 +112,14 @@ class XrayRelayProvider(BaseAgentProvider):
         }
 
     async def start(self):
-        config = self.generate_config()
-        if not config:
-            logger.info("No config generated for XrayRelayProvider, skipping start")
-            return
-
-        XRAY_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-        XRAY_RELAY_CONFIG_PATH.write_text(json.dumps(config, indent=2))
+        # If config doesn't exist, try to generate it from settings (legacy mode)
+        if not XRAY_RELAY_CONFIG_PATH.exists():
+            config = self.generate_config()
+            if not config:
+                logger.info("No config generated for XrayRelayProvider, skipping start")
+                return
+            XRAY_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+            XRAY_RELAY_CONFIG_PATH.write_text(json.dumps(config, indent=2))
 
         bin_path = Path(self.settings.bin_path) / "xray"
         if not bin_path.exists():
@@ -140,10 +141,28 @@ class XrayRelayProvider(BaseAgentProvider):
             logger.info("Stopping Xray Relay")
             try:
                 self.process.terminate()
-                await self.process.wait()
+                # Use wait() with timeout to ensure it stops
+                try:
+                    await asyncio.wait_for(self.process.wait(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    self.process.kill()
+                    await self.process.wait()
             except Exception as e:
                 logger.error(f"Error stopping Xray Relay: {e}")
             self.process = None
+
+    async def update_config(self, config_dict: Dict[str, Any]):
+        """Write new config and restart the process."""
+        logger.info("Updating Xray Relay configuration")
+        XRAY_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+        XRAY_RELAY_CONFIG_PATH.write_text(json.dumps(config_dict, indent=2))
+        await self.restart()
+
+    async def restart(self):
+        """Restart the Xray process."""
+        logger.info("Restarting Xray Relay")
+        await self.stop()
+        await self.start()
 
     async def get_clients(self) -> List[Dict[str, Any]]:
         return []

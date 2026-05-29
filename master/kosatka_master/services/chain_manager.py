@@ -114,3 +114,121 @@ class ChainManager:
             "address": exit_result.get("address"),
             "public_key": exit_result.get("public_key"),
         }
+
+    async def provision_dynamic_relay(self, node: Node) -> Dict[str, Any]:
+        """
+        Generate and push a multi-upstream config to a relay node.
+        """
+        upstreams_ids = node.metadata_json.get("upstreams", [])
+        if not upstreams_ids and node.upstream_id:
+            upstreams_ids = [node.upstream_id]
+
+        if not upstreams_ids:
+            raise ChainError(f"Node {node.name} has no upstreams configured")
+
+        upstream_nodes = []
+        for uid in upstreams_ids:
+            u_node = await self._get_node(uid)
+            if not u_node:
+                raise ChainError(f"Upstream node ID {uid} not found")
+            upstream_nodes.append(u_node)
+
+        config = self.generate_relay_config(node, upstream_nodes)
+
+        # Push to agent
+        try:
+            return await _call_agent(node, "POST", "/relay/config", json=config)
+        except Exception as e:
+            raise ChainError(f"Failed to push config to agent {node.name}: {e}")
+
+    def generate_relay_config(self, node: Node, upstreams: list[Node]) -> Dict[str, Any]:
+        """
+        Generate Xray config with multiple outbounds and urltest for failover.
+        """
+        outbounds = []
+        outbound_tags = []
+
+        for i, u_node in enumerate(upstreams):
+            tag = f"upstream-{i + 1}"
+            outbound_tags.append(tag)
+
+            # Default values for KOSATKA Reality
+            reality_pub = u_node.metadata_json.get("reality_public_key") or ""
+            reality_dest = u_node.metadata_json.get("reality_dest") or "google.com:443"
+            dest_host = reality_dest.split(":")[0]
+            relay_uuid = (
+                u_node.metadata_json.get("relay_uuid") or "00000000-0000-0000-0000-000000000000"
+            )
+            relay_port = u_node.metadata_json.get("relay_port") or 443
+
+            outbounds.append(
+                {
+                    "tag": tag,
+                    "protocol": "vless",
+                    "settings": {
+                        "vnext": [
+                            {
+                                "address": u_node.address.replace("http://", "")
+                                .replace("https://", "")
+                                .split(":")[0],
+                                "port": int(relay_port),
+                                "users": [{"id": relay_uuid, "encryption": "none"}],
+                            }
+                        ]
+                    },
+                    "streamSettings": {
+                        "network": "tcp",
+                        "security": "reality",
+                        "realitySettings": {
+                            "publicKey": reality_pub,
+                            "fingerprint": "chrome",
+                            "serverName": dest_host,
+                            "shortId": u_node.metadata_json.get("reality_short_id") or "",
+                        },
+                    },
+                }
+            )
+
+        # Add freedom outbound for direct fallback
+        outbounds.append({"protocol": "freedom", "tag": "direct"})
+
+        # Failover/Balancing outbound
+        # We use 'urltest' to pick the fastest healthy upstream
+        outbounds.insert(
+            0,
+            {
+                "tag": "proxy-out",
+                "protocol": "loopback",  # or just a tag alias
+                "settings": {"outboundTag": outbound_tags[0]},  # Placeholder, replaced by balancer
+            },
+        )
+
+        config = {
+            "log": {"loglevel": "info"},
+            "inbounds": [
+                {
+                    "tag": "socks-in",
+                    "port": 1080,
+                    "protocol": "socks",
+                    "settings": {"auth": "noauth", "udp": True},
+                }
+            ],
+            "outbounds": outbounds,
+            "observatory": {
+                "subjectSelector": outbound_tags,
+                "probeUrl": "http://cp.cloudflare.com/generate_204",
+                "probeInterval": "1m",
+            },
+            "routing": {
+                "domainStrategy": "AsIs",
+                "balancers": [
+                    {
+                        "tag": "balancer",
+                        "selector": outbound_tags,
+                        "strategy": {"type": "leastPing"},
+                    }
+                ],
+                "rules": [{"type": "field", "balancerTag": "balancer", "port": "1-65535"}],
+            },
+        }
+        return config

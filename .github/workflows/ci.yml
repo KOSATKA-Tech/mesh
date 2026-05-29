@@ -74,9 +74,37 @@ jobs:
       - name: Build UI
         run: npm run build
 
+      - name: Performance Audit (Lighthouse)
+        run: |
+          npm install -g @lhci/cli@0.13.x
+          lhci autorun
+
+  performance-gate:
+    name: Performance and Load Tests
+    needs: [test-backend, test-ui]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run Performance Gate
+        run: ./tests/performance/run_perf.sh
+
   build-and-push:
     name: Build and Push Docker Images
-    needs: [test-backend, test-ui]
+    needs: [test-backend, test-ui, performance-gate]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

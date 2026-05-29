@@ -146,15 +146,15 @@ export default function Dashboard() {
 
   return (
     <div className="h-[calc(100vh-10rem)] w-full relative">
-      <div className="absolute top-0 left-0 z-10 space-y-2">
-        <h1 className="text-4xl font-bold tracking-tighter">NETWORK MAP</h1>
-        <p className="text-muted-foreground italic">Drag connections to route traffic dynamically</p>
+      <div className="absolute top-0 left-0 z-10 space-y-1 lg:space-y-2 pointer-events-none">
+        <h1 className="text-2xl lg:text-4xl font-bold tracking-tighter">NETWORK MAP</h1>
+        <p className="text-[10px] lg:text-sm text-muted-foreground italic">Drag connections to route traffic dynamically</p>
       </div>
 
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="h-full w-full bg-card/20 rounded-3xl border border-border overflow-hidden shadow-inner"
+        className="h-full w-full bg-card/20 rounded-2xl lg:rounded-3xl border border-border overflow-hidden shadow-inner mt-12 lg:mt-0"
       >
         <ReactFlow
           nodes={nodes}
@@ -164,17 +164,19 @@ export default function Dashboard() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
+          fitViewOptions={{ padding: 0.2 }}
         >
           <Background color="#333" gap={20} />
-          <Controls className="bg-popover border-border fill-foreground" />
+          <Controls className="bg-popover border-border fill-foreground scale-75 lg:scale-100 origin-bottom-left" />
           <MiniMap 
-            style={{ height: 120, width: 150 }}
+            style={{ height: 80, width: 100 }}
             nodeColor="#6366f1"
             maskColor="rgba(0,0,0,0.5)"
-            className="bg-card border border-border rounded-xl"
+            className="bg-card border border-border rounded-xl hidden sm:block"
           />
         </ReactFlow>
       </motion.div>
     </div>
   );
 }
+

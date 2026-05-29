@@ -1,11 +1,13 @@
-from locust import HttpUser, task, between
 import json
 
+from locust import HttpUser, between, task
+
+
 class MeshMasterUser(HttpUser):
-    wait_time = between(0.1, 0.5) # Simulate fast user interactions
-    
+    wait_time = between(0.1, 0.5)  # Simulate fast user interactions
+
     def on_start(self):
-        self.client.headers.update({"X-Kosatka-Key": "default-key"}) # Match default api_key
+        self.client.headers.update({"X-Kosatka-Key": "default-key"})  # Match default api_key
 
     @task(3)
     def get_nodes(self):
@@ -23,9 +25,10 @@ class MeshMasterUser(HttpUser):
     def check_health(self):
         self.client.get("/health")
 
+
 class MeshAgentUser(HttpUser):
     wait_time = between(0.5, 2)
-    
+
     def on_start(self):
         self.client.headers.update({"X-Kosatka-Key": "default-key"})
 

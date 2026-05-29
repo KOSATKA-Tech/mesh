@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     smtp_port: int = 587
     smtp_user: str | None = None
     smtp_password: str | None = None
-    smtp_from: str = "noreply@kosatka.tech"
+    smtp_from: str | None = None
+    smtp_display_name: str = "Mesh Admin"
 
     sync_interval: int = 60
     expiration_check_interval: int = 300

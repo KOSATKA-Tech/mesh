@@ -6,6 +6,7 @@ echo "🚀 Starting Performance Gate..."
 # 1. Start Master with 1GB RAM simulation (using a lightweight approach if cgroups not available)
 # In CI, we use the runner's resources but monitor them.
 export KOSATKA_API_KEY="default-key"
+export KOSATKA_RATE_LIMIT_ENABLED="false"
 cd master
 uv run uvicorn kosatka_master.main:app --port 8000 &
 MASTER_PID=$!

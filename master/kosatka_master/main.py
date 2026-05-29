@@ -85,19 +85,22 @@ app.include_router(dashboard_router)
 
 # Serve Admin UI
 static_dir = Path(__file__).parent / "static"
-if static_dir.exists():
-    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+admin_dir = static_dir / "admin"
+
+if admin_dir.exists():
+    # Vite builds assets into static/admin/assets
+    app.mount("/admin/assets", StaticFiles(directory=str(admin_dir / "assets")), name="assets")
 
     @app.get("/admin/{full_path:path}")
     async def serve_admin(full_path: str):
-        return FileResponse(static_dir / "index.html")
+        return FileResponse(admin_dir / "index.html")
 
     @app.get("/")
     async def redirect_to_admin():
         return RedirectResponse(url="/admin/")
 
 else:
-    logger.warning(f"Static directory {static_dir} not found. UI will not be served.")
+    logger.warning(f"Admin directory {admin_dir} not found. UI will not be served.")
 
 
 @app.get("/health")

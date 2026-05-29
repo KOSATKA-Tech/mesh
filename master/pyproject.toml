@@ -23,6 +23,7 @@ dependencies = [
     "python-multipart",
     "PyYAML",
     "psutil",
+    "slowapi",
 ]
 
 [build-system]

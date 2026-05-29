@@ -2,8 +2,7 @@ module.exports = {
   ci: {
     collect: {
       staticDistDir: '../master/kosatka_master/static',
-      url: ['http://localhost:4173/admin/'],
-      startServerCommand: 'npm run preview',
+      url: ['http://localhost/admin/'],
     },
     assert: {
       assertions: {

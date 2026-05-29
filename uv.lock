@@ -1339,6 +1339,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
+    { name = "slowapi" },
     { name = "uvicorn" },
 ]
 
@@ -1350,6 +1351,7 @@ requires-dist = [
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "python-multipart" },
+    { name = "slowapi" },
     { name = "uvicorn" },
 ]
 
@@ -1395,6 +1397,7 @@ dependencies = [
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
     { name = "pyyaml" },
+    { name = "slowapi" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn" },
 ]
@@ -1413,6 +1416,7 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"] },
     { name = "python-multipart" },
     { name = "pyyaml" },
+    { name = "slowapi" },
     { name = "sqlalchemy", extras = ["asyncio"] },
     { name = "uvicorn" },
 ]

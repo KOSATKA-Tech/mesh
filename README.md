@@ -58,7 +58,7 @@ git clone https://github.com/6dba/mesh.git && cd mesh
 uv pip install -e ./cli
 
 # Configure DNS (for automated HTTPS)
-kosatka-mesh dns-setup --provider beget --base-domain ub.kosatka.tech
+kosatka-mesh dns-setup --provider beget --base-domain yourdomain.com
 ```
 
 ### 2. Deployment

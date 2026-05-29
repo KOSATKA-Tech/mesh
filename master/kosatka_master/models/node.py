@@ -22,6 +22,7 @@ class Node(Base):
     last_seen: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     role: Mapped[str] = mapped_column(String(50), default="standalone")
+    assigned_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
     upstream_id: Mapped[int | None] = mapped_column(ForeignKey("nodes.id"), nullable=True)
     metadata_json: Mapped[dict] = mapped_column(JSON, default=dict)
 

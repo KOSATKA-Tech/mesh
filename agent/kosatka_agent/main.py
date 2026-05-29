@@ -113,6 +113,11 @@ async def _startup():
         await shaper.setup_shaping()
         protector.start()
 
+    if settings.auto_https and settings.domain:
+        from .https_manager import start_https_proxy
+
+        start_https_proxy(settings.domain, 8010)
+
     await _bootstrap_node()
 
 

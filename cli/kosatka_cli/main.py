@@ -72,8 +72,11 @@ def login(
 
 @app.command("dns-setup")
 def dns_setup(
-    provider: str = typer.Option("manual", help="DNS provider: manual, beget"),
-    base_domain: str = typer.Option(None, help="Base domain (e.g., ub.kosatka.tech)"),
+    provider: str = typer.Option(
+        "manual",
+        help="DNS provider: manual, cloudflare, digitalocean, hetzner, beget, route53, google",
+    ),
+    base_domain: str = typer.Option(None, help="Base domain (e.g., nodes.kosatka.tech)"),
 ):
     """Configure DNS provider and base domain for SSL/HTTPS automation"""
     cfg = config.load_config()
@@ -81,12 +84,27 @@ def dns_setup(
     if base_domain:
         cfg.base_domain = base_domain
 
-    if provider == "beget":
+    if provider == "cloudflare":
+        cfg.cloudflare_token = typer.prompt("Cloudflare API Token", hide_input=True)
+        cfg.cloudflare_zone_id = typer.prompt("Cloudflare Zone ID")
+    elif provider == "digitalocean":
+        cfg.do_token = typer.prompt("DigitalOcean Personal Access Token", hide_input=True)
+    elif provider == "hetzner":
+        cfg.hetzner_token = typer.prompt("Hetzner API Token", hide_input=True)
+    elif provider == "beget":
         cfg.beget_login = typer.prompt("Beget API Login")
         cfg.beget_api_key = typer.prompt("Beget API Key", hide_input=True)
+    elif provider == "route53":
+        console.print(
+            "[yellow]Route53 requires AWS CLI configuration. Ensure your environment has access.[/yellow]"
+        )
+    elif provider == "google":
+        console.print(
+            "[yellow]Google DNS requires GCloud SDK configuration. Ensure your environment has access.[/yellow]"
+        )
 
     if not cfg.base_domain:
-        cfg.base_domain = typer.prompt("Base domain (e.g., ub.kosatka.tech)")
+        cfg.base_domain = typer.prompt("Base domain (e.g., nodes.kosatka.tech)")
 
     config.save_config(cfg)
     console.print("[green]DNS configuration saved.[/green]")

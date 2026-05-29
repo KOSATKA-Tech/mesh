@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     shaping_enabled: bool = False
     shaping_total_rate: str = "1gbit"  # Total interface bandwidth
 
+    # HTTPS Automation
+    domain: str | None = None
+    auto_https: bool = False
+
     # Pydantic-settings reads AGENT_*-prefixed env vars so agent.env can cleanly
     # coexist with other services on the same host.
     model_config = SettingsConfigDict(

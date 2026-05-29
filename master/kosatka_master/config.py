@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     # ``category-ru-blocked``, ``geolocation-!ru``, ``category-ads-all``.
     geosite_default_tags: list[str] = []
 
+    # HTTPS Automation
+    domain: str | None = None
+    auto_https: bool = False
+
     def effective_agent_api_key(self) -> str:
         return self.agent_api_key or self.api_key
 

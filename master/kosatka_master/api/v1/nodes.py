@@ -22,9 +22,9 @@ class NodeSchema(BaseModel):
     provider_type: str
     status: str
     is_active: bool
+    assigned_domain: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class NodeCreate(BaseModel):
@@ -91,6 +91,26 @@ async def create_node(node_data: NodeCreate, db: AsyncSession = Depends(get_db))
             raise HTTPException(status_code=409, detail=f"Node create conflict: {exc}") from exc
         return winner
     await db.refresh(node)
+
+    # 4. Trigger Automatic DNS registration if configured
+    from ...services.dns.dns_service import DNSService
+
+    dns_service = DNSService(db)
+
+    # Extract IP from address (e.g. http://1.2.3.4:8010)
+    try:
+        from urllib.parse import urlparse
+
+        ip = urlparse(node.address).hostname
+        if ip:
+            domain = await dns_service.register_node_dns(node.name, ip)
+            if domain:
+                node.assigned_domain = domain
+                await db.commit()
+                await db.refresh(node)
+    except:
+        pass
+
     return node
 
 

@@ -37,6 +37,12 @@ async def lifespan(app: FastAPI):
     # and calls scheduler.start() internally. Calling scheduler.start() here
     # directly would leave the scheduler jobless.
     setup_scheduler()
+
+    if settings.auto_https and settings.domain:
+        from .services.dns.https_manager import start_https_proxy
+
+        start_https_proxy(settings.domain, 8000)
+
     async with http_client_lifespan():
         try:
             yield

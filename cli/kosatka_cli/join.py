@@ -40,11 +40,15 @@ async def _join(master_url: str, api_key: str, role: str = "standalone", name: s
     client.config = cfg  # Inject temporary config
 
     # 3. Register with master
+    assigned_domain = None
     try:
         payload = {"name": name, "address": address, "provider_type": "agent", "api_key": api_key}
         res = await client.request("POST", "/nodes/", json=payload)
         node_id = res.get("id")
+        assigned_domain = res.get("assigned_domain")
         console.print(f"[green]✓ Registered with Master. Node ID: {node_id}[/green]")
+        if assigned_domain:
+            console.print(f"[green]✓ DNS assigned: {assigned_domain}[/green]")
     except Exception as e:
         console.print(f"[red]✗ Registration failed: {e}[/red]")
         return
@@ -56,6 +60,8 @@ AGENT_PROVIDER_TYPE=wireguard
 AGENT_NODE_ROLE={role}
 KOSATKA_MASTER_URL={master_url}
 KOSATKA_API_KEY={api_key}
+AGENT_DOMAIN={assigned_domain or ""}
+AGENT_AUTO_HTTPS={'true' if assigned_domain else 'false'}
 """
     with open(".env.agent", "w") as f:
         f.write(env_content.strip())

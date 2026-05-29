@@ -12,9 +12,13 @@ class Config(BaseModel):
     base_url: str = "http://localhost:8000"
     api_key: Optional[str] = None
     dns_provider: str = "manual"
+    base_domain: Optional[str] = None
+    cloudflare_token: Optional[str] = None
+    cloudflare_zone_id: Optional[str] = None
+    do_token: Optional[str] = None
+    hetzner_token: Optional[str] = None
     beget_login: Optional[str] = None
     beget_api_key: Optional[str] = None
-    base_domain: Optional[str] = None  # e.g. ub.kosatka.tech
 
 
 def load_config() -> Config:

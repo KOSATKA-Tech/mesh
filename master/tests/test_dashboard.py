@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.mark.asyncio
 async def test_get_dashboard_html(client):
     response = await client.get("/dashboard")
@@ -11,7 +12,7 @@ async def test_get_dashboard_html(client):
 @pytest.mark.asyncio
 async def test_realtime_stats_endpoint_protected(client):
     from kosatka_master.config import settings
-    
+
     # No key
     response = await client.get("/api/v1/stats/realtime")
     assert response.status_code == 403

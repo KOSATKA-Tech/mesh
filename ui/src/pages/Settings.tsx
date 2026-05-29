@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { Save, Mail, Globe, Bell, Shield, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Settings() {
-  const { data: configs, isLoading } = useQuery({
+  const [localConfig, setLocalConfig] = useState<any>({});
+  
+  const { isLoading } = useQuery({
     queryKey: ['system-configs'],
     queryFn: async () => {
       const resp = await axios.get('/api/v1/config/');
@@ -17,15 +19,14 @@ export default function Settings() {
           obj[c.key] = c.value;
         }
       });
+      // Initializing local state only if it's currently empty to avoid overwriting user edits
+      setLocalConfig((prev: any) => {
+        if (Object.keys(prev).length === 0) return obj;
+        return prev;
+      });
       return obj;
     }
   });
-
-  const [localConfig, setLocalConfig] = useState<any>({});
-  
-  React.useEffect(() => {
-    if (configs) setLocalConfig(configs);
-  }, [configs]);
 
   const updateBatch = useMutation({
     mutationFn: async (data: any) => {
@@ -41,7 +42,7 @@ export default function Settings() {
     setLocalConfig({ ...localConfig, [key]: val });
   };
 
-  if (isLoading) return <div className="flex h-full items-center justify-center">Loading command center...</div>;
+  if (isLoading && Object.keys(localConfig).length === 0) return <div className="flex h-full items-center justify-center">Loading command center...</div>;
 
   return (
     <div className="space-y-8 max-w-4xl pb-24 lg:pb-0">

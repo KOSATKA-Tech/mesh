@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 interface AuthContextType {
@@ -16,15 +16,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('kosatka_token');
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      checkMe();
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
+  const logout = () => {
+    localStorage.removeItem('kosatka_token');
+    delete axios.defaults.headers.common['Authorization'];
+    setIsAuthenticated(false);
+    setUser(null);
+  };
 
   const checkMe = async () => {
     try {
@@ -38,18 +35,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem('kosatka_token');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      checkMe();
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
   const login = (token: string) => {
     localStorage.setItem('kosatka_token', token);
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setIsAuthenticated(true);
     checkMe();
-  };
-
-  const logout = () => {
-    localStorage.removeItem('kosatka_token');
-    delete axios.defaults.headers.common['Authorization'];
-    setIsAuthenticated(false);
-    setUser(null);
   };
 
   return (

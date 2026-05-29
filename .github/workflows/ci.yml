@@ -7,8 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Run Linters and Tests
+  test-backend:
+    name: Backend Linters and Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -29,13 +29,13 @@ jobs:
 
       - name: Run Linters
         run: |
-          uv run black --check .
           uv run isort --check-only .
+          uv run black --check .
           uv run flake8 master agent sdk cli
 
-      - name: Run Tests with Coverage
+      - name: Run Tests
         run: |
-          uv run pytest --cov=kosatka_master --cov=kosatka_agent --cov=KosatkaMesh --cov=kosatka_cli --cov-report=xml
+          uv run pytest master/tests agent/tests sdk/tests cli/tests --cov=master/kosatka_master --cov=agent/kosatka_agent --cov=cli/kosatka_cli --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
@@ -44,9 +44,39 @@ jobs:
           file: ./coverage.xml
           fail_ci_if_error: false
 
+  test-ui:
+    name: UI Linters and Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Build UI
+        run: npm run build
+
   build-and-push:
     name: Build and Push Docker Images
-    needs: test
+    needs: [test-backend, test-ui]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:

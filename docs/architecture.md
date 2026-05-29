@@ -83,7 +83,7 @@ flows. It complements the high-level overview in
 ### SDK (`sdk/KosatkaMesh`)
 
 * Async Python client for embedding the mesh into a downstream
-  service (e.g. the [under-behind](https://github.com/6dba/under-behind)
+  service (e.g. the [under-behind](https://github.com/KOSATKA-Tech/under-behind)
   Telegram bot). Same surface as the CLI but typed and importable.
 
 ### Ansible (`ansible/`)
@@ -223,7 +223,7 @@ services should reject any payload that doesn't match.
   `information_schema.columns WHERE table_schema='public'` so user
   schemas with same-named tables don't trick the check.
 * For non-trivial schema changes Alembic is the eventual destination;
-  see [#4](https://github.com/6dba/mesh/pull/4) for context.
+  see [#4](https://github.com/KOSATKA-Tech/mesh/pull/4) for context.
 
 ---
 

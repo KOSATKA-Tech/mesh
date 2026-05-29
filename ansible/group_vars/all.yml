@@ -13,8 +13,8 @@ kosatka_master_url: "http://{{ groups['master'][0] }}:{{ kosatka_master_port }}"
 # ─── KOSATKA agent ────────────────────────────────────────────────────────
 agent_api_key: "change-me-in-production"
 agent_port: 8001
-kosatka_agent_image: "ghcr.io/6dba/kosatka-agent:latest"
-kosatka_master_image: "ghcr.io/6dba/kosatka-master:latest"
+kosatka_agent_image: "ghcr.io/KOSATKA-Tech/kosatka-agent:latest"
+kosatka_master_image: "ghcr.io/KOSATKA-Tech/kosatka-master:latest"
 
 # ─── AmneziaWG defaults ───────────────────────────────────────────────────
 awg_listen_port: 51820

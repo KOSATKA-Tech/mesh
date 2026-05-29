@@ -54,7 +54,7 @@ Security is configured automatically during deployment via Ansible:
 ### 1. Installation
 ```bash
 # Clone and setup CLI
-git clone https://github.com/6dba/mesh.git && cd mesh
+git clone https://github.com/KOSATKA-Tech/mesh.git && cd mesh
 uv pip install -e ./cli
 
 # Configure DNS (for automated HTTPS)

@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   master:
-    image: {{ kosatka_master_image | default('ghcr.io/6dba/kosatka-master:latest') }}
+    image: {{ kosatka_master_image | default('ghcr.io/KOSATKA-Tech/kosatka-master:latest') }}
     restart: unless-stopped
     env_file: .env
     ports:

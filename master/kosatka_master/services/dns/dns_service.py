@@ -18,7 +18,7 @@ class DNSService:
         for c in configs:
             try:
                 obj[c.key] = json.loads(c.value)
-            except:
+            except Exception:
                 obj[c.key] = c.value
         return obj
 

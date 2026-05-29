@@ -14,6 +14,7 @@ from .api.v1.dashboard import router as dashboard_router
 from .api.v1.limiter import setup_rate_limiting
 from .api.v1.router import api_router
 from .api.v1.subscriptions import public_router as subscriptions_public_router
+from .config import settings
 from .database import Base, engine
 from .http_client import http_client_lifespan
 from .instances import host_monitor

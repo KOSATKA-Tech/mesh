@@ -108,8 +108,11 @@ async def create_node(node_data: NodeCreate, db: AsyncSession = Depends(get_db))
                 node.assigned_domain = domain
                 await db.commit()
                 await db.refresh(node)
-    except:
-        pass
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to auto-register DNS for node {node.name}: {e}")
 
     return node
 

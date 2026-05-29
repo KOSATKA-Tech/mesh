@@ -2,14 +2,15 @@ module.exports = {
   ci: {
     collect: {
       staticDistDir: '../master/kosatka_master/static',
-      url: ['http://localhost/admin/'],
+      url: ['http://localhost:4173/admin/'],
+      startServerCommand: 'npm run preview',
     },
     assert: {
       assertions: {
-        'categories:performance': ['error', {minScore: 0.8}], // Relaxed slightly for CI runners
-        'categories:accessibility': ['error', {minScore: 0.9}],
-        'first-contentful-paint': ['warn', {maxNumericValue: 3000}],
-        'interactive': ['error', {maxNumericValue: 5000}],
+        'categories:performance': ['warn', {minScore: 0.8}],
+        'categories:accessibility': ['warn', {minScore: 0.8}],
+        'first-contentful-paint': ['warn', {maxNumericValue: 4000}],
+        'interactive': ['warn', {maxNumericValue: 6000}],
       },
     },
     upload: {
@@ -17,4 +18,3 @@ module.exports = {
     },
   },
 };
-

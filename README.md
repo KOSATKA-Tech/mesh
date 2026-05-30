@@ -41,6 +41,16 @@ Access it at: `https://master.yourdomain.com/admin/`
 
 ---
 
+## 🆘 Emergency Access (No VPN Onboarding)
+
+Designed specifically for regions with strict censorship where Telegram and VPN sites are blocked.
+1.  **Landing Page**: Deploy the [Kosatka Landing](https://github.com/KOSATKA-Tech/kosatka-landing) on a clean, unblocked domain.
+2.  **Request Access**: User enters their email on the landing page.
+3.  **3-Hour Trial**: Master node automatically provisions a 3-hour VLESS/Reality trial and sends it to the user's email along with installation guides.
+4.  **Bot Deep Link**: The email includes a magic link that opens the Telegram Bot through the newly established VPN connection, allowing the user to complete their purchase.
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Installation

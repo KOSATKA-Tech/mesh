@@ -22,6 +22,7 @@
 *   **Multi-Provider DNS Automation**: Automated A-record management for **Cloudflare, DigitalOcean, Hetzner, and Beget**.
 *   **Dynamic Routing & Failover**: Relays automatically detect healthy upstreams and route traffic based on the lowest latency (`leastPing`).
 *   **Visual Control Plane**: Interactive Miro-style network graph (PWA) to manage topology with drag-and-drop.
+*   **Emergency Access Landing**: A separate [Landing Page](https://github.com/KOSATKA-Tech/kosatka-landing) for onboarding users without VPN via email-based 3-hour trials.
 *   **Infrastructure Hardening**: Automated **UFW Firewall**, **Fail2Ban**, and multi-layered **DDoS protection**.
 *   **Self-Healing**: Real-time monitoring of CPU, RAM, Disk, and Temp with automated system pruning.
 

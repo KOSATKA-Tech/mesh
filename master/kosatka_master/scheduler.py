@@ -24,6 +24,17 @@ async def check_expirations_job():
         await engine.check_expirations()
 
 
+async def cleanup_trials_job():
+    """Removes expired trial clients from the system."""
+    async with SessionLocal() as db:
+        from .services.subscription_engine import SubscriptionEngine
+
+        engine = SubscriptionEngine(db)
+        # check_expirations already deactivates them, we just need to ensure
+        # that it runs frequently enough.
+        await engine.check_expirations()
+
+
 async def refresh_geosite_job():
     """Re-pull configured geosite tags from v2fly/domain-list-community.
 
@@ -42,6 +53,7 @@ async def refresh_geosite_job():
 def setup_scheduler():
     scheduler.add_job(sync_nodes_job, "interval", seconds=settings.sync_interval)
     scheduler.add_job(check_expirations_job, "interval", seconds=settings.expiration_check_interval)
+    scheduler.add_job(cleanup_trials_job, "interval", minutes=1)  # Fast cleanup for trials
     if settings.geosite_refresh_interval > 0 and settings.geosite_default_tags:
         scheduler.add_job(
             refresh_geosite_job,

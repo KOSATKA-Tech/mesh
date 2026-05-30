@@ -33,3 +33,5 @@ class Client(Base):
         Integer, ForeignKey("nodes.id", ondelete="SET NULL"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    is_trial: Mapped[bool] = mapped_column(Boolean, default=False)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

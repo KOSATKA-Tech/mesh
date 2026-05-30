@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # ``category-ru-blocked``, ``geolocation-!ru``, ``category-ads-all``.
     geosite_default_tags: list[str] = []
 
+    # Bot Integration
+    bot_username: str = "KosatkaVPNBot"
+
     # HTTPS Automation
     domain: str | None = None
     auto_https: bool = False

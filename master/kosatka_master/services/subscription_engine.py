@@ -43,9 +43,23 @@ class SubscriptionEngine:
         await self.db.execute(query)
         await self.db.commit()
 
-        # 2. Find clients that no longer have ANY active subscriptions
+        # 2. Deactivate expired trials (where expires_at is set directly on Client)
+        trial_query = (
+            update(Client)
+            .where(Client.is_trial.is_(True))
+            .where(Client.is_active.is_(True))
+            .where(Client.expires_at < now)
+            .values(is_active=False)
+        )
+        await self.db.execute(trial_query)
+        await self.db.commit()
+
+        # 3. Find clients that no longer have ANY active subscriptions
         # and are still marked as active.
-        clients_query = select(Client).where(Client.is_active.is_(True))
+        # (Exclude active trials as they don't need subscriptions to be active)
+        clients_query = (
+            select(Client).where(Client.is_active.is_(True)).where(Client.is_trial.is_(False))
+        )
         result = await self.db.execute(clients_query)
         active_clients = result.scalars().all()
 

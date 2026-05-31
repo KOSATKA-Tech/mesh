@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --no-cache-dir uv
 
-# Copy uv files and full workspace
+# 1. Copy full workspace structure FIRST
 COPY pyproject.toml uv.lock README.md /app/
 COPY master /app/master
 COPY agent /app/agent
@@ -36,7 +36,9 @@ COPY sdk /app/sdk
 COPY cli /app/cli
 COPY ansible /app/ansible
 
-# Copy the UI build from the builder stage
+# 2. Copy the UI build AFTER copying the code to avoid overwriting
+# The path must match kosatka_master/main.py expectations
+RUN mkdir -p /app/master/kosatka_master/static/admin
 COPY --from=ui-builder /ui/dist /app/master/kosatka_master/static/admin
 
 # Install Python dependencies

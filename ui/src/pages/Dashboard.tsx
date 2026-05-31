@@ -107,19 +107,19 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="h-[calc(100vh-12rem)] w-full relative">
-      <div className="absolute top-0 left-0 z-10 space-y-2 lg:space-y-3 pointer-events-none group/title">
-        <h1 className="text-3xl lg:text-5xl font-black tracking-luxury uppercase italic text-white/90 group-hover/title:text-white transition-colors duration-700">Network Map</h1>
-        <div className="flex items-center space-x-2">
-          <p className="text-[10px] lg:text-[12px] font-bold text-white/40 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
-          <Info className="w-3 h-3 text-white/10 group-hover/title:text-white/30 transition-colors" />
+    <div className="flex flex-col h-[calc(100vh-10rem)] w-full relative space-y-6">
+      <div className="flex-none space-y-2 lg:space-y-3 pointer-events-none group/title">
+        <h1 className="text-4xl lg:text-6xl font-black tracking-luxury uppercase italic text-white/95 group-hover/title:text-white transition-colors duration-700">Network Map</h1>
+        <div className="flex items-center space-x-3">
+          <p className="text-[12px] lg:text-[14px] font-bold text-white/50 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
+          <Info className="w-4 h-4 text-white/20 group-hover/title:text-white/50 transition-colors" />
         </div>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="h-full w-full glass rounded-3xl overflow-hidden mt-16 lg:mt-0"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex-1 min-h-0 glass rounded-[40px] overflow-hidden border border-white/10 shadow-2xl relative"
       >
         <ReactFlow
           nodes={nodes}
@@ -131,13 +131,13 @@ export default function Dashboard() {
           fitView
           fitViewOptions={{ padding: 0.2 }}
         >
-          <Background color="rgba(255,255,255,0.03)" gap={30} size={1} />
-          <Controls className="scale-75 lg:scale-100 origin-bottom-left" />
+          <Background color="rgba(255,255,255,0.05)" gap={40} size={1} />
+          <Controls className="!bg-black/80 !border-white/10 !rounded-2xl !p-1" />
           <MiniMap 
-            style={{ height: 80, width: 100 }}
-            nodeColor="#333"
-            maskColor="rgba(0,0,0,0.8)"
-            className="!bg-black/80 !border-white/10 !rounded-2xl hidden sm:block"
+            style={{ height: 100, width: 140 }}
+            nodeColor="#555"
+            maskColor="rgba(0,0,0,0.7)"
+            className="!bg-black/90 !border-white/10 !rounded-3xl hidden sm:block !m-4"
           />
         </ReactFlow>
       </motion.div>

@@ -1,37 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #050a0f;
-  --color-foreground: #FFFFFF;
-
-  --color-card: rgba(255, 255, 255, 0.05);
-  --color-card-foreground: #FFFFFF;
-
-  --color-popover: #0a0f14;
-  --color-popover-foreground: #FFFFFF;
-
-  --color-primary: #FFFFFF;
-  --color-primary-foreground: #02060A;
-
-  --color-secondary: rgba(255, 255, 255, 0.08);
-  --color-secondary-foreground: #FFFFFF;
-
-  --color-muted: rgba(255, 255, 255, 0.08);
-  --color-muted-foreground: rgba(255, 255, 255, 0.5);
-
-  --color-accent: rgba(255, 255, 255, 0.15);
-  --color-accent-foreground: #FFFFFF;
-
-  --color-destructive: #991b1b;
-  --color-destructive-foreground: #FFFFFF;
-
-  --color-border: rgba(255, 255, 255, 0.12);
-  --color-input: rgba(255, 255, 255, 0.08);
-  --color-ring: rgba(255, 255, 255, 0.3);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
 
   --radius-lg: 1.5rem;
   --radius-md: 1rem;
   --radius-sm: 0.5rem;
+}
+
+:root {
+  --background: #050a0f;
+  --foreground: #ffffff;
+  --card: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.12);
+  --muted: rgba(255, 255, 255, 0.08);
+  --muted-foreground: rgba(255, 255, 255, 0.5);
+  --accent: rgba(255, 255, 255, 0.15);
+  --primary: #ffffff;
+  --primary-foreground: #02060A;
+}
+
+.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --border: rgba(15, 23, 42, 0.1);
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #e2e8f0;
+  --primary: #0f172a;
+  --primary-foreground: #ffffff;
 }
 
 @layer base {
@@ -43,7 +49,8 @@
     color: var(--color-foreground);
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    font-size: 15px; /* Increased from default */
+    font-size: 15px;
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
 }
 
@@ -57,35 +64,28 @@
   .glow-white {
     filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4));
   }
+  .text-shadow {
+    text-shadow: 0 0 20px rgba(255,255,255,0.1);
+  }
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* ReactFlow - FIXING VISIBILITY */
+.react-flow__background {
+  background-color: var(--background);
 }
-::-webkit-scrollbar-track {
-  background: #050a0f;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* ReactFlow Customizations */
 .react-flow__node {
   @apply !bg-transparent !border-none !p-0;
 }
 .react-flow__edge-path {
-  @apply !stroke-white/30 !stroke-[1.5px]; /* Increased visibility */
+  stroke: var(--foreground);
+  stroke-opacity: 0.2;
+  stroke-width: 2px;
 }
 .react-flow__controls {
-  @apply !bg-black/60 !border-white/20 !rounded-xl !overflow-hidden;
+  @apply !bg-card !border-border !rounded-xl !overflow-hidden !shadow-2xl;
 }
 .react-flow__controls-button {
-  @apply !border-white/10 !fill-white/60 hover:!bg-white/20 !transition-colors;
+  @apply !border-border !fill-foreground hover:!bg-accent !transition-colors;
 }
 
 @keyframes pulse-flow {
@@ -98,3 +98,9 @@
   stroke-dasharray: 6;
   animation: pulse-flow 1.5s linear infinite;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--background); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }

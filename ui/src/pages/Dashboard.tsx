@@ -29,14 +29,14 @@ export default function Dashboard() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
 
-  const { data: meshData, isLoading } = useQuery({
+  const { data: meshData, isLoading, error } = useQuery({
     queryKey: ['mesh-topology'],
     queryFn: async () => {
-      const [nodesResp, linksResp] = await Promise.all([
+      const [nodesResp, policiesResp] = await Promise.all([
         axios.get('/api/v1/nodes/'),
-        axios.get('/api/v1/policies/'), // Corrected endpoint
+        axios.get('/api/v1/policies/'),
       ]);
-      return { nodes: nodesResp.data, policies: linksResp.data };
+      return { nodes: nodesResp.data, policies: policiesResp.data };
     },
     refetchInterval: 5000,
   });
@@ -46,7 +46,7 @@ export default function Dashboard() {
       const flowNodes = meshData.nodes.map((node: any, idx: number) => ({
         id: node.id.toString(),
         type: 'agent',
-        position: node.position || { x: idx * 250, y: 100 },
+        position: node.position || { x: idx * 250, y: 150 },
         data: { 
           label: node.name, 
           status: node.status, 
@@ -65,7 +65,7 @@ export default function Dashboard() {
           className: 'edge-animated',
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: 'rgba(255,255,255,0.2)',
+            color: 'var(--foreground)',
           },
         }));
 
@@ -101,25 +101,34 @@ export default function Dashboard() {
   );
 
   if (isLoading) return (
-    <div className="flex h-[70vh] items-center justify-center">
-       <div className="text-[10px] font-bold uppercase tracking-luxury animate-pulse text-white/20 italic">Synchronizing Fleet...</div>
+    <div className="flex h-[60vh] items-center justify-center">
+       <div className="text-[12px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Synchronizing Fleet...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex h-[60vh] items-center justify-center text-center">
+       <div className="space-y-4">
+          <p className="text-red-500 font-bold uppercase tracking-widest">Topology Link Failure</p>
+          <p className="text-[10px] opacity-40 uppercase">Check API authorization and connectivity.</p>
+       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] w-full relative space-y-6">
-      <div className="flex-none space-y-2 lg:space-y-3 pointer-events-none group/title">
-        <h1 className="text-4xl lg:text-6xl font-black tracking-luxury uppercase italic text-white/95 group-hover/title:text-white transition-colors duration-700">Network Map</h1>
-        <div className="flex items-center space-x-3">
-          <p className="text-[12px] lg:text-[14px] font-bold text-white/50 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
-          <Info className="w-4 h-4 text-white/20 group-hover/title:text-white/50 transition-colors" />
+    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-8">
+      <div className="flex-none space-y-2 lg:space-y-4 pointer-events-none group/title">
+        <h1 className="text-4xl lg:text-7xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-opacity duration-700">Network Map</h1>
+        <div className="flex items-center space-x-4">
+          <p className="text-[11px] lg:text-[13px] font-bold opacity-40 uppercase tracking-[0.4em]">Orchestrating autonomous distributed nodes</p>
+          <Info className="w-4 h-4 opacity-10 group-hover/title:opacity-30 transition-opacity" />
         </div>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 0, scale: 0.99 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex-1 min-h-0 glass rounded-[40px] overflow-hidden border border-white/10 shadow-2xl relative"
+        className="flex-1 min-h-0 glass rounded-[50px] overflow-hidden shadow-2xl relative border-border"
       >
         <ReactFlow
           nodes={nodes}
@@ -129,15 +138,15 @@ export default function Dashboard() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.3 }}
         >
-          <Background color="rgba(255,255,255,0.05)" gap={40} size={1} />
-          <Controls className="!bg-black/80 !border-white/10 !rounded-2xl !p-1" />
+          <Background gap={40} size={1} />
+          <Controls className="!bg-card !border-border !rounded-2xl !p-1 shadow-xl" />
           <MiniMap 
-            style={{ height: 100, width: 140 }}
-            nodeColor="#555"
-            maskColor="rgba(0,0,0,0.7)"
-            className="!bg-black/90 !border-white/10 !rounded-3xl hidden sm:block !m-4"
+            style={{ height: 120, width: 160 }}
+            nodeColor="var(--primary)"
+            maskColor="var(--background)"
+            className="!bg-card !border-border !rounded-[30px] hidden md:block !m-6 shadow-2xl"
           />
         </ReactFlow>
       </motion.div>

@@ -5,11 +5,11 @@ import { clsx } from 'clsx';
 // ROLE-SPECIFIC DISTRIBUTED GRAPH VISUALS
 const MasterSVG = () => (
   <svg width="60" height="60" viewBox="0 0 100 100">
-    <g className="filter drop-shadow-[0_0_10px_rgba(255,255,255,0.4)]">
+    <g className="filter drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
       <motion.circle 
-        animate={{ r: [2, 4, 2], opacity: [0.6, 1, 0.6] }}
+        animate={{ r: [2, 5, 2], opacity: [0.6, 1, 0.6] }}
         transition={{ duration: 2, repeat: Infinity }}
-        cx="50" cy="50" r="3" fill="white" 
+        cx="50" cy="50" r="4" fill="currentColor" 
       />
       {[...Array(8)].map((_, i) => {
         const angle = (i * 45) * (Math.PI / 180);
@@ -17,8 +17,8 @@ const MasterSVG = () => (
         const y2 = 50 + 35 * Math.sin(angle);
         return (
           <g key={i}>
-            <line x1="50" y1="50" x2={x2} y2={y2} stroke="white" strokeWidth="1" opacity="0.3" />
-            <circle cx={x2} cy={y2} r="2" fill="white" opacity="0.6" />
+            <line x1="50" y1="50" x2={x2} y2={y2} stroke="currentColor" strokeWidth="1.5" opacity="0.3" />
+            <circle cx={x2} cy={y2} r="3" fill="currentColor" opacity="0.6" />
           </g>
         );
       })}
@@ -29,19 +29,18 @@ const MasterSVG = () => (
 const RelaySVG = () => (
   <svg width="60" height="60" viewBox="0 0 100 100">
     <g className="opacity-70">
-      <circle cx="50" cy="50" r="2" fill="white" />
-      {/* Symmetrical horizontal branches */}
-      <line x1="20" y1="50" x2="80" y2="50" stroke="white" strokeWidth="1.5" opacity="0.4" />
-      <circle cx="20" cy="50" r="3" fill="white" opacity="0.6" />
-      <circle cx="80" cy="50" r="3" fill="white" opacity="0.6" />
-      {[30, 150, 210, 330].map((angleDeg, i) => {
+      <circle cx="50" cy="50" r="3" fill="currentColor" />
+      <line x1="15" y1="50" x2="85" y2="50" stroke="currentColor" strokeWidth="2" opacity="0.4" />
+      <circle cx="15" cy="50" r="4" fill="currentColor" opacity="0.6" />
+      <circle cx="85" cy="50" r="4" fill="currentColor" opacity="0.6" />
+      {[45, 135, 225, 315].map((angleDeg, i) => {
         const angle = angleDeg * (Math.PI / 180);
-        const x2 = 50 + 25 * Math.cos(angle);
-        const y2 = 50 + 25 * Math.sin(angle);
+        const x2 = 50 + 30 * Math.cos(angle);
+        const y2 = 50 + 30 * Math.sin(angle);
         return (
           <g key={i}>
-            <line x1="50" y1="50" x2={x2} y2={y2} stroke="white" strokeWidth="0.8" opacity="0.3" />
-            <circle cx={x2} cy={y2} r="1.5" fill="white" opacity="0.4" />
+            <line x1="50" y1="50" x2={x2} y2={y2} stroke="currentColor" strokeWidth="1" opacity="0.3" />
+            <circle cx={x2} cy={y2} r="2" fill="currentColor" opacity="0.4" />
           </g>
         );
       })}
@@ -51,24 +50,23 @@ const RelaySVG = () => (
 
 const ExitSVG = () => (
   <svg width="60" height="60" viewBox="0 0 100 100">
-    <g className="filter drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">
-      <circle cx="50" cy="70" r="2" fill="white" opacity="0.8" />
-      {/* Blooming upwards */}
+    <g>
+      <circle cx="50" cy="75" r="3" fill="currentColor" opacity="0.8" />
       {[210, 240, 270, 300, 330].map((angleDeg, i) => {
         const angle = angleDeg * (Math.PI / 180);
-        const x2 = 50 + 40 * Math.cos(angle);
-        const y2 = 70 + 40 * Math.sin(angle);
+        const x2 = 50 + 45 * Math.cos(angle);
+        const y2 = 75 + 45 * Math.sin(angle);
         return (
           <g key={i}>
             <motion.line 
               initial={{ pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              x1="50" y1="70" x2={x2} y2={y2} stroke="white" strokeWidth="1" opacity="0.4" 
+              x1="50" y1="75" x2={x2} y2={y2} stroke="currentColor" strokeWidth="1.5" opacity="0.4" 
             />
             <motion.circle 
-              animate={{ opacity: [0.3, 1, 0.3] }}
+              animate={{ opacity: [0.3, 1, 0.3], r: [2, 4, 2] }}
               transition={{ duration: 3, delay: i * 0.2, repeat: Infinity }}
-              cx={x2} cy={y2} r="2.5" fill="white" 
+              cx={x2} cy={y2} r="3" fill="currentColor" 
             />
           </g>
         );
@@ -90,29 +88,32 @@ export const NodeComponent = ({ data }: any) => {
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.1 }}
       className={clsx(
-        "relative flex flex-col items-center group transition-all duration-700",
+        "relative flex flex-col items-center group transition-all duration-500",
         !isOnline && "grayscale opacity-40"
       )}
     >
-      <div className="relative mb-2">
+      <div className={clsx(
+        "relative mb-4 text-foreground transition-colors duration-500",
+        isOnline ? "text-primary drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" : "text-muted-foreground"
+      )}>
         {getVisual()}
         {isOnline && (
-           <div className="absolute inset-0 bg-white/5 blur-2xl rounded-full -z-10 animate-pulse scale-150" />
+           <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full -z-10 animate-pulse scale-[2]" />
         )}
       </div>
 
-      <div className="text-center space-y-1">
-        <div className="text-[10px] font-black uppercase tracking-[0.2em] italic text-white/80 group-hover:text-white transition-colors">
+      <div className="text-center space-y-1.5">
+        <div className="text-[12px] font-black uppercase tracking-[0.2em] italic opacity-80 group-hover:opacity-100 transition-opacity">
           {data.label}
         </div>
         <div className="flex items-center justify-center space-x-2">
            <div className={clsx(
-             "w-1 h-1 rounded-full",
-             isOnline ? "bg-white shadow-[0_0_5px_#fff]" : "bg-white/10"
+             "w-1.5 h-1.5 rounded-full",
+             isOnline ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500/30"
            )} />
-           <span className="text-[7px] font-bold uppercase tracking-widest text-white/20 group-hover:text-white/40 transition-colors">
+           <span className="text-[9px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-60 transition-opacity">
              {data.status}
            </span>
         </div>

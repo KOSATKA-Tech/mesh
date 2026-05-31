@@ -7,6 +7,8 @@ interface AuthContextType {
   user: any | null;
   login: (token: string) => void;
   logout: () => void;
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>((localStorage.getItem('kosatka_theme') as any) || 'dark');
 
   const logout = () => {
     localStorage.removeItem('kosatka_token');
@@ -22,6 +25,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(false);
     setUser(null);
   };
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('kosatka_theme', newTheme);
+  };
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  }, [theme]);
 
   const checkMe = async () => {
     try {
@@ -53,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, user, login, logout, theme, toggleTheme }}>
       {children}
     </AuthContext.Provider>
   );

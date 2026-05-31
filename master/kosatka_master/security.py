@@ -1,6 +1,6 @@
-from fastapi import Depends, HTTPException, Security, status
-from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from jose import JWTError, jwt
+from fastapi import HTTPException, Security, status, Depends
+from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,18 +12,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=F
 
 ALGORITHM = "HS256"
 
-
-async def get_api_key(api_key: str = Security(api_key_header)):
-    if api_key == settings.api_key:
-        return api_key
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="Could not validate credentials",
-    )
-
-
 async def get_current_admin_optional(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
+    token: str = Depends(oauth2_scheme), 
+    db: AsyncSession = Depends(get_db)
 ):
     if not token:
         return None
@@ -32,27 +23,29 @@ async def get_current_admin_optional(
         username: str = payload.get("sub")
         if username is None:
             return None
-
+        
         from .models.alert import AdminUser
-
         result = await db.execute(select(AdminUser).where(AdminUser.username == username))
         return result.scalar_one_or_none()
     except JWTError:
         return None
 
-
 async def validate_operator(
-    api_key: str = Security(api_key_header), admin_user=Depends(get_current_admin_optional)
+    api_key: str = Security(api_key_header),
+    admin_user = Depends(get_current_admin_optional)
 ):
     """
     Validates that the caller is either a machine with a valid API Key
     or an authenticated Admin user.
     """
-    if api_key == settings.api_key:
-        return True
+    # 1. Check Admin Session first (browsers)
     if admin_user:
         return True
-
+    
+    # 2. Check API Key (bots / cli)
+    if api_key and api_key == settings.api_key:
+        return True
+        
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Access denied. Valid API Key or Admin session required.",

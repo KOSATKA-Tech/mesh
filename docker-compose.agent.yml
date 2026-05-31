@@ -21,6 +21,8 @@ services:
       dockerfile: agent/Dockerfile
     privileged: true
     ports:
+      - "80:80"
+      - "443:443"
       - "8010:8010"
     # ``env_file`` populates the container's environment from
     # .env.agent if present. Operator-supplied values (AGENT_API_KEY,
@@ -31,7 +33,11 @@ services:
     volumes:
       # Persist provider state (peer lists, server keys) across restarts.
       - agent_state:/opt/kosatka/agent
+      - caddy_data:/data
+      - caddy_config:/config
     restart: always
 
 volumes:
   agent_state:
+  caddy_data:
+  caddy_config:

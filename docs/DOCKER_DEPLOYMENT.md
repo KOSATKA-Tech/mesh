@@ -108,9 +108,20 @@ services:
     image: ghcr.io/kosatka-tech/kosatka-agent:latest
     container_name: kosatka-agent
     privileged: true
-    network_mode: host
+    network_mode: host # OR map ports below if not using host mode
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8010:8010"
     env_file: .env
+    volumes:
+      - agent_state:/opt/kosatka/agent
+      - caddy_data:/data
     restart: always
+
+volumes:
+  agent_state:
+  caddy_data:
 ```
 
 ---
@@ -122,8 +133,25 @@ If on VPS 1, configure your API endpoint in `src/App.tsx` before building:
 ```typescript
 const MASTER_URL = "https://master.yourdomain.com";
 ```
-Then build and serve via Nginx:
+
+### `docker-compose.yml` (Production with HTTPS)
+```yaml
+services:
+  landing:
+    build: .
+    container_name: kosatka-landing
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+    restart: always
+
+volumes:
+  caddy_data:
+```
+
+### Deploy
 ```bash
-npm run build
-# Serve dist/ folder
+docker compose up -d --build
 ```

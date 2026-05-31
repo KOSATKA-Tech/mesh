@@ -17,6 +17,7 @@ import 'reactflow/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+import { Info } from 'lucide-react';
 import { NodeComponent } from '../components/NodeComponent';
 
 const nodeTypes = {
@@ -107,9 +108,12 @@ export default function Dashboard() {
 
   return (
     <div className="h-[calc(100vh-12rem)] w-full relative">
-      <div className="absolute top-0 left-0 z-10 space-y-2 lg:space-y-3 pointer-events-none">
-        <h1 className="text-3xl lg:text-5xl font-black tracking-luxury uppercase italic text-white/90">Network Map</h1>
-        <p className="text-[10px] lg:text-[12px] font-bold text-white/40 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
+      <div className="absolute top-0 left-0 z-10 space-y-2 lg:space-y-3 pointer-events-none group/title">
+        <h1 className="text-3xl lg:text-5xl font-black tracking-luxury uppercase italic text-white/90 group-hover/title:text-white transition-colors duration-700">Network Map</h1>
+        <div className="flex items-center space-x-2">
+          <p className="text-[10px] lg:text-[12px] font-bold text-white/40 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
+          <Info className="w-3 h-3 text-white/10 group-hover/title:text-white/30 transition-colors" />
+        </div>
       </div>
 
       <motion.div 

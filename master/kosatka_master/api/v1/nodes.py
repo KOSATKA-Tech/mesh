@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from kosatka_master.config import settings
 from kosatka_master.database import get_db
 from kosatka_master.models.node import Node
-from kosatka_master.security import get_api_key
+from kosatka_master.security import get_api_key, validate_operator
 from kosatka_master.services.providers.agent_provider import AgentNodeProvider
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter(prefix="/nodes", tags=["nodes"], dependencies=[Depends(get_api_key)])
+router = APIRouter(prefix="/nodes", tags=["nodes"], dependencies=[Depends(validate_operator)])
 
 
 class NodeSchema(BaseModel):

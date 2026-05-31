@@ -68,13 +68,13 @@ export default function Nodes() {
                     </span>
                   </div>
                 </td>
-                <td className="px-8 py-6 font-bold text-[11px] tracking-tight text-white/80 italic">{node.name}</td>
+                <td className="px-8 py-6 font-bold text-[13px] tracking-tight text-white/90 italic">{node.name}</td>
                 <td className="px-8 py-6">
-                  <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[8px] font-black uppercase tracking-widest">
+                  <span className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/60 text-[10px] font-black uppercase tracking-widest">
                     {node.provider_type}
                   </span>
                 </td>
-                <td className="px-8 py-6 font-mono text-[10px] text-white/30 truncate max-w-[200px]">{node.address}</td>
+                <td className="px-8 py-6 font-mono text-[12px] text-white/50 truncate max-w-[200px]">{node.address}</td>
                 <td className="px-8 py-6 text-right">
                   <div className="flex items-center justify-end space-x-2">
                     <button className="p-2.5 rounded-xl bg-white/0 hover:bg-white/5 text-white/20 hover:text-white transition-all">

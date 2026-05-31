@@ -27,10 +27,29 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create tables if they don't exist. This is safe for an MVP; for
-    # production, prefer Alembic migrations (not yet set up in this repo).
+    # Create tables if they don't exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Seed SystemConfig from settings if empty
+    import json
+
+    from .models.alert import SystemConfig
+
+    async with AsyncSession(engine) as session:
+        res = await session.execute(select(SystemConfig))
+        if not res.scalars().first():
+            config_items = [
+                SystemConfig(key="smtp_host", value=json.dumps(settings.smtp_host)),
+                SystemConfig(key="smtp_port", value=json.dumps(settings.smtp_port)),
+                SystemConfig(key="smtp_user", value=json.dumps(settings.smtp_user)),
+                SystemConfig(key="smtp_password", value=json.dumps(settings.smtp_password)),
+                SystemConfig(key="smtp_from", value=json.dumps(settings.smtp_from)),
+                SystemConfig(key="bot_username", value=json.dumps(settings.bot_username)),
+                SystemConfig(key="base_domain", value=json.dumps(settings.domain)),
+            ]
+            session.add_all(config_items)
+            await session.commit()
 
     # Start services
     host_monitor.start()

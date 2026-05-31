@@ -33,7 +33,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const [nodesResp, linksResp] = await Promise.all([
         axios.get('/api/v1/nodes/'),
-        axios.get('/api/v1/routing/policies'), // Assuming this returns current topology
+        axios.get('/api/v1/policies/'), // Corrected endpoint
       ]);
       return { nodes: nodesResp.data, policies: linksResp.data };
     },
@@ -107,9 +107,9 @@ export default function Dashboard() {
 
   return (
     <div className="h-[calc(100vh-12rem)] w-full relative">
-      <div className="absolute top-0 left-0 z-10 space-y-1 lg:space-y-2 pointer-events-none">
-        <h1 className="text-2xl lg:text-3xl font-bold tracking-luxury uppercase italic">Network Map</h1>
-        <p className="text-[9px] lg:text-[10px] font-bold text-white/20 uppercase tracking-widest">Orchestrating autonomous distributed nodes</p>
+      <div className="absolute top-0 left-0 z-10 space-y-2 lg:space-y-3 pointer-events-none">
+        <h1 className="text-3xl lg:text-5xl font-black tracking-luxury uppercase italic text-white/90">Network Map</h1>
+        <p className="text-[10px] lg:text-[12px] font-bold text-white/40 uppercase tracking-[0.3em]">Orchestrating autonomous distributed nodes</p>
       </div>
 
       <motion.div 

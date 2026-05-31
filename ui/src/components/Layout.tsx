@@ -73,8 +73,8 @@ export default function Layout() {
             >
               {({ isActive }) => (
                 <>
-                  <item.icon className={clsx("h-4 w-4 transition-all duration-500", isActive ? "text-white scale-110" : "group-hover:scale-105")} />
-                  <span className="font-bold uppercase tracking-[0.2em] text-[10px] italic">{item.label}</span>
+                  <item.icon className={clsx("h-5 w-5 transition-all duration-500", isActive ? "text-white scale-110" : "group-hover:scale-105")} />
+                  <span className="font-bold uppercase tracking-[0.2em] text-[11px] italic">{item.label}</span>
                   {isActive && (
                     <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-white/40 rounded-full" />
                   )}

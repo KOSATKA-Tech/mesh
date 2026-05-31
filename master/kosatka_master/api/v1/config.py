@@ -8,9 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...database import get_db
 from ...models.alert import SystemConfig
-from .auth import get_current_admin
+from ...security import validate_operator
 
-router = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/config", tags=["config"], dependencies=[Depends(validate_operator)])
 
 
 class ConfigUpdate(BaseModel):

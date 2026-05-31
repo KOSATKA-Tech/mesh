@@ -208,7 +208,7 @@ export default function Settings() {
             </div>
 
             <div className="bg-white/[0.01] border border-white/5 p-6 rounded-3xl space-y-4">
-              <label className="text-[9px] text-white/20 uppercase font-black tracking-widest block">Bot Entity</label>
+              <label className="text-[9px] text-white/20 uppercase font-black tracking-widest block">Bot Username</label>
               <input 
                 className="w-full bg-transparent border-b border-white/10 text-sm outline-none focus:border-white/40 transition-all italic" 
                 value={localConfig.bot_username || ''} 

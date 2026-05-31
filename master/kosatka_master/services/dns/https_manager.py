@@ -16,7 +16,17 @@ def start_https_proxy(domain: str, port: int):
 
     caddyfile_content = f"""
 {domain} {{
-    reverse_proxy localhost:{port}
+    # Protect Admin UI from public access
+    # Only allow API and Subscription endpoints
+    @disallowed path /admin* /
+    handle @disallowed {{
+        respond "Access Denied. Use SSH tunnel to access Admin UI." 403
+    }}
+
+    # Allow everything else (API, Subscriptions)
+    handle {{
+        reverse_proxy localhost:{port}
+    }}
 }}
 """
     # Write to a temporary file

@@ -114,9 +114,9 @@ class TrialService:
 <body>
     <div class="container">
         <img src="https://raw.githubusercontent.com/KOSATKA-Tech/mesh/main/assets/kosatka-mesh-site-logo.png" alt="KOSATKA" class="logo" />
-        
+
         <h1>Trial Access Active</h1>
-        
+
         <p>We have initialized your 3-hour high-speed session. Use the access protocol below to establish a secure connection and finalize your deployment in Telegram.</p>
 
         <div class="config-box">{config}</div>

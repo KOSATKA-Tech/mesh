@@ -17,9 +17,25 @@ nano .env # Fill in your values
 ### Step B: `docker-compose.yml`
 ```yaml
 services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: kosatka
+      POSTGRES_PASSWORD: kosatka
+      POSTGRES_DB: kosatka
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kosatka -d kosatka"]
+
   master:
-    image: ghcr.io/kosatka-tech/kosatka-master:latest
-    container_name: kosatka-master
+    build:
+      context: .
+      dockerfile: master/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
@@ -30,8 +46,16 @@ services:
     restart: always
 
 volumes:
+  postgres_data:
   caddy_data:
 ```
+
+### Step C: Deploy
+Simply run:
+```bash
+docker compose up -d --build
+```
+*Note: The UI is automatically built and bundled inside the Docker image. No separate steps required.*
 
 ---
 

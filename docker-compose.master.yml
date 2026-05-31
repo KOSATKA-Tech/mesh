@@ -44,6 +44,8 @@ services:
       postgres:
         condition: service_healthy
     ports:
+      - "80:80"
+      - "443:443"
       - "8000:8000"
     # ``env_file`` populates the container's environment from
     # .env.master if present. Operator-supplied values (KOSATKA_API_KEY,

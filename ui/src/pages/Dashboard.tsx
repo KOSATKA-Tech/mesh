@@ -16,9 +16,21 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Info } from 'lucide-react';
 import { NodeComponent } from '../components/NodeComponent';
+
+const Tooltip = ({ text }: { text: string }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 5, scale: 0.98 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    exit={{ opacity: 0, y: 3, scale: 0.98 }}
+    className="absolute z-50 px-4 py-2 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl pointer-events-none -top-10 left-0 whitespace-nowrap"
+  >
+    {text}
+    <div className="absolute -bottom-1 left-4 w-2 h-2 bg-primary rotate-45" />
+  </motion.div>
+);
 
 const nodeTypes = {
   agent: NodeComponent,
@@ -28,6 +40,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
+  const [isInfoHovered, setIsInfoHovered] = useState(false);
 
   const { data: meshData, isLoading, error } = useQuery({
     queryKey: ['mesh-topology'],
@@ -116,14 +129,24 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-14rem)] lg:h-[calc(100vh-16rem)] w-full relative space-y-12">
-      <div className="flex-none space-y-2 lg:space-y-4 pointer-events-none group/title">
-        <h1 className="text-5xl lg:text-8xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-all duration-700">Network Map</h1>
-        <div className="flex items-center space-x-4">
+    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-12">
+      <div className="flex-none space-y-2 lg:space-y-4 group/title relative">
+        <h1 className="text-5xl lg:text-8xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-opacity duration-700">Network Map</h1>
+        <div className="flex items-center space-x-4 relative">
           <p className="text-[11px] lg:text-[14px] font-bold opacity-40 uppercase tracking-[0.4em]">Orchestrating autonomous distributed nodes</p>
-          <Info className="w-5 h-5 opacity-10 group-hover/title:opacity-30 transition-opacity" />
+          <div 
+            className="pointer-events-auto cursor-help relative"
+            onMouseEnter={() => setIsInfoHovered(true)}
+            onMouseLeave={() => setIsInfoHovered(false)}
+          >
+            <Info className="w-5 h-5 opacity-10 group-hover/title:opacity-30 transition-opacity" />
+            <AnimatePresence>
+              {isInfoHovered && <Tooltip text="Visualizing active transmission paths and node integrity." />}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
+
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.998 }}

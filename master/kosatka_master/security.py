@@ -12,6 +12,14 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=F
 
 ALGORITHM = "HS256"
 
+async def get_api_key(api_key: str = Security(api_key_header)):
+    if api_key == settings.api_key:
+        return api_key
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Could not validate credentials",
+    )
+
 async def get_current_admin_optional(
     token: str = Depends(oauth2_scheme), 
     db: AsyncSession = Depends(get_db)

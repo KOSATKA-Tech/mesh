@@ -104,9 +104,13 @@ static_dir = Path(__file__).parent / "static"
 admin_dir = static_dir / "admin"
 
 if admin_dir.exists():
+    # Use StaticFiles for everything except the root HTML
+    # This handles MIME types correctly for CSS/JS
+    app.mount("/admin/assets", StaticFiles(directory=str(admin_dir / "assets")), name="assets")
+
     @app.get("/admin/{full_path:path}")
     async def serve_admin(full_path: str):
-        # 1. Try to serve exact file from admin_dir (for favicon.png, etc)
+        # 1. If requesting a file in the admin root (favicon, etc), serve it
         file_path = admin_dir / full_path
         if file_path.is_file():
             return FileResponse(file_path)

@@ -23,7 +23,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const basename = import.meta.env.VITE_BASE_URL || '/';
+  const basename = '/admin';
   
   return (
     <QueryClientProvider client={new QueryClient()}>

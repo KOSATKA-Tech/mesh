@@ -61,19 +61,27 @@ async def get_current_admin(
 async def setup_first_admin(user_data: AdminUserCreate, db: AsyncSession = Depends(get_db)):
     """Register the first admin. Only works if no admins exist."""
     result = await db.execute(select(AdminUser))
-    if result.scalars().first():
+    existing = result.scalars().first()
+    if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Admin already exists. Use login instead.",
+            detail=f"Admin already exists (found user: {existing.username}). Use login instead.",
         )
 
-    new_admin = AdminUser(
-        username=user_data.username,
-        password_hash=get_password_hash(user_data.password),
-        email=user_data.email,
-    )
-    db.add(new_admin)
-    await db.commit()
+    try:
+        new_admin = AdminUser(
+            username=user_data.username,
+            password_hash=get_password_hash(user_data.password),
+            email=user_data.email,
+        )
+        db.add(new_admin)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create admin: {str(e)}",
+        )
 
     access_token = create_access_token(data={"sub": new_admin.username})
     return {"access_token": access_token, "token_type": "bearer"}

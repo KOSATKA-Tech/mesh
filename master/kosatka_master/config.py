@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # HTTPS Automation
     domain: str | None = None
     auto_https: bool = False
+    serve_ui: bool = True
 
     def effective_agent_api_key(self) -> str:
         return self.agent_api_key or self.api_key

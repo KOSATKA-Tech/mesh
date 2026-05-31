@@ -103,7 +103,7 @@ app.include_router(dashboard_router)
 static_dir = Path(__file__).parent / "static"
 admin_dir = static_dir / "admin"
 
-if admin_dir.exists():
+if settings.serve_ui and admin_dir.exists():
     # Use StaticFiles for everything except the root HTML
     # This handles MIME types correctly for CSS/JS
     app.mount("/admin/assets", StaticFiles(directory=str(admin_dir / "assets")), name="assets")
@@ -114,7 +114,7 @@ if admin_dir.exists():
         file_path = admin_dir / full_path
         if file_path.is_file():
             return FileResponse(file_path)
-        
+
         # 2. Otherwise serve index.html for SPA routing
         return FileResponse(admin_dir / "index.html")
 

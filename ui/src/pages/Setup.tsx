@@ -59,7 +59,7 @@ export default function Setup() {
         className="w-full max-w-md space-y-8 bg-card/50 backdrop-blur-xl p-8 rounded-2xl border border-border shadow-2xl relative"
       >
         <div className="text-center">
-          <img src="/assets/logo.png" alt="Kosatka" className="mx-auto h-20 w-auto mb-4 grayscale brightness-200" />
+          <img src="/admin/logo-main.png" alt="Kosatka" className="mx-auto h-20 w-auto mb-4 filter brightness-200 contrast-150 mix-blend-screen" />
           <h2 className="text-3xl font-bold tracking-tight text-foreground">
             Initialize Mesh
           </h2>

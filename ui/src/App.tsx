@@ -9,9 +9,7 @@ import Setup from './pages/Setup';
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
-QueryClientProvider({
-  client: new QueryClient()
-});
+const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,7 +24,7 @@ function App() {
   const basename = '/admin';
   
   return (
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router basename={basename}>
           <Routes>

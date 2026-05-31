@@ -24,7 +24,7 @@ export default function Layout() {
       {/* Mobile Top Bar */}
       <div className="lg:hidden absolute top-0 left-0 right-0 h-16 border-b border-white/5 bg-background/50 backdrop-blur-xl flex items-center justify-between px-6 z-50">
         <div className="flex items-center space-x-3">
-          <img src="/logo-main.png" alt="Kosatka" className="h-8 w-auto mix-blend-screen brightness-200" />
+          <img src="/admin/logo-main.png" alt="Kosatka" className="h-8 w-auto mix-blend-screen brightness-200" />
           <span className="font-bold tracking-[0.3em] uppercase italic text-[10px] text-white/40">Kosatka</span>
         </div>
         <button 
@@ -43,7 +43,8 @@ export default function Layout() {
         <div className="p-12 hidden lg:flex flex-col items-center space-y-6">
           <motion.img 
             whileHover={{ scale: 1.05, filter: "brightness(250%)" }}
-            src="/logo-main.png" 
+            src="/admin/logo-main.png"
+ 
             alt="Kosatka" 
             className="h-20 w-auto mix-blend-screen brightness-200 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] transition-all duration-700" 
           />

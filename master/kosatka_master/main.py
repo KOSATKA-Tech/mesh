@@ -104,11 +104,14 @@ static_dir = Path(__file__).parent / "static"
 admin_dir = static_dir / "admin"
 
 if admin_dir.exists():
-    # Vite builds assets into static/admin/assets
-    app.mount("/admin/assets", StaticFiles(directory=str(admin_dir / "assets")), name="assets")
-
     @app.get("/admin/{full_path:path}")
     async def serve_admin(full_path: str):
+        # 1. Try to serve exact file from admin_dir (for favicon.png, etc)
+        file_path = admin_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        
+        # 2. Otherwise serve index.html for SPA routing
         return FileResponse(admin_dir / "index.html")
 
     @app.get("/")

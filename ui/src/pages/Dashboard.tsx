@@ -116,19 +116,19 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-8">
+    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-12">
       <div className="flex-none space-y-2 lg:space-y-4 pointer-events-none group/title">
-        <h1 className="text-4xl lg:text-7xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-opacity duration-700">Network Map</h1>
+        <h1 className="text-5xl lg:text-8xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-all duration-700">Network Map</h1>
         <div className="flex items-center space-x-4">
-          <p className="text-[11px] lg:text-[13px] font-bold opacity-40 uppercase tracking-[0.4em]">Orchestrating autonomous distributed nodes</p>
-          <Info className="w-4 h-4 opacity-10 group-hover/title:opacity-30 transition-opacity" />
+          <p className="text-[11px] lg:text-[14px] font-bold opacity-40 uppercase tracking-[0.4em]">Orchestrating autonomous distributed nodes</p>
+          <Info className="w-5 h-5 opacity-10 group-hover/title:opacity-30 transition-opacity" />
         </div>
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.99 }}
+        initial={{ opacity: 0, scale: 0.995 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex-1 min-h-0 glass rounded-[50px] overflow-hidden shadow-2xl relative border-border"
+        className="flex-1 min-h-0 glass rounded-[60px] overflow-hidden shadow-2xl relative border-border"
       >
         <ReactFlow
           nodes={nodes}
@@ -138,15 +138,21 @@ export default function Dashboard() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{ padding: 0.4 }}
+          minZoom={0.2}
+          maxZoom={2}
+          translateExtent={[[-500, -500], [2000, 2000]]}
         >
-          <Background gap={40} size={1} />
-          <Controls className="!bg-card !border-border !rounded-2xl !p-1 shadow-xl" />
+          <Background gap={40} size={1} color="var(--border)" />
+          <Controls 
+            showInteractive={false} 
+            className="!m-8" 
+          />
           <MiniMap 
-            style={{ height: 120, width: 160 }}
+            style={{ height: 140, width: 200 }}
             nodeColor="var(--primary)"
             maskColor="var(--background)"
-            className="!bg-card !border-border !rounded-[30px] hidden md:block !m-6 shadow-2xl"
+            className="!bg-card !border-border !rounded-[40px] hidden lg:block !m-8 shadow-2xl"
           />
         </ReactFlow>
       </motion.div>

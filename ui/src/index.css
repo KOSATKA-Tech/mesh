@@ -51,6 +51,7 @@
     -webkit-font-smoothing: antialiased;
     font-size: 15px;
     transition: background-color 0.5s ease, color 0.5s ease;
+    overflow: hidden; /* Lock body */
   }
 }
 
@@ -69,7 +70,7 @@
   }
 }
 
-/* ReactFlow - DEFINITIVE FIXES */
+/* ReactFlow - CRITICAL FIXES */
 .react-flow__background {
   background-color: var(--background) !important;
 }
@@ -82,34 +83,37 @@
   stroke-width: 2px !important;
 }
 .react-flow__controls {
-  @apply !bg-card !border-border !rounded-2xl !overflow-hidden !shadow-2xl;
+  @apply !bg-card !border-border !rounded-2xl !overflow-hidden !shadow-2xl !p-0 !flex !flex-col;
   background-color: var(--card) !important;
-  border: 1px solid var(--border) !important;
 }
 .react-flow__controls-button {
-  @apply !border-border !fill-foreground hover:!bg-accent !transition-colors;
+  @apply !border-none !fill-foreground hover:!bg-accent !transition-all !m-0 !w-12 !h-12 !flex !items-center !justify-center;
   background-color: transparent !important;
   border-bottom: 1px solid var(--border) !important;
+  padding: 0 !important;
+}
+.react-flow__controls-button svg {
+  @apply !w-5 !h-5;
 }
 .react-flow__controls-button:last-child {
   border-bottom: none !important;
 }
 .react-flow__minimap {
-  @apply !bg-card !border-border !rounded-[30px] !shadow-2xl;
+  @apply !bg-card !border-border !rounded-[30px] !shadow-2xl !overflow-hidden;
   background-color: var(--card) !important;
 }
 .react-flow__minimap-mask {
   fill: var(--background) !important;
-  opacity: 0.7 !important;
+  opacity: 0.8 !important;
 }
-.react-flow__selection {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+.react-flow__attribution {
+  background-color: transparent !important;
+  opacity: 0.15 !important;
+  font-size: 8px !important;
+  pointer-events: none !important;
 }
-/* Fix for the 'white square' zoom selection issue */
-.react-flow__nodesselection-rect, .react-flow__selection {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+.react-flow__attribution a {
+  display: none !important; /* Hide the link but keep the logo if needed, or hide all */
 }
 
 @keyframes pulse-flow {

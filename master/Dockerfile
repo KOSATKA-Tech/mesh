@@ -41,8 +41,9 @@ COPY ansible /app/ansible
 RUN mkdir -p /app/master/kosatka_master/static/admin
 COPY --from=ui-builder /ui/dist /app/master/kosatka_master/static/admin
 
-# Install Python dependencies
-RUN uv sync --frozen --no-dev
+# Install Python dependencies with cache mount and increased retries
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --link-mode=copy
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app/master

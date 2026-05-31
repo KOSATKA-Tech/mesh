@@ -115,43 +115,42 @@ export default function Dashboard() {
 
   if (isLoading) return (
     <div className="flex h-[60vh] items-center justify-center">
-       <div className="text-[13px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Synchronizing Fleet...</div>
+       <div className="text-[12px] font-black uppercase tracking-luxury animate-pulse opacity-10 italic">Synchronizing Fleet...</div>
     </div>
   );
 
   if (error) return (
     <div className="flex h-[60vh] items-center justify-center text-center">
        <div className="space-y-4">
-          <p className="text-red-500 font-bold uppercase tracking-widest">Topology Link Failure</p>
-          <p className="text-[10px] opacity-40 uppercase">Check API authorization and connectivity.</p>
+          <p className="text-red-500 font-bold uppercase tracking-widest text-[11px]">Topology Link Failure</p>
+          <p className="text-[9px] opacity-40 uppercase">Check API authorization and connectivity.</p>
        </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-12">
-      <div className="flex-none space-y-2 lg:space-y-4 group/title relative">
-        <h1 className="text-5xl lg:text-8xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-opacity duration-700">Network Map</h1>
-        <div className="flex items-center space-x-4 relative">
-          <p className="text-[11px] lg:text-[14px] font-bold opacity-40 uppercase tracking-[0.4em]">Orchestrating autonomous distributed nodes</p>
+    <div className="flex flex-col h-[calc(100vh-6rem)] lg:h-[calc(100vh-8rem)] w-full relative space-y-6">
+      <div className="flex-none space-y-1 lg:space-y-2 group/title relative">
+        <h1 className="text-3xl lg:text-5xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-opacity duration-700">Network Map</h1>
+        <div className="flex items-center space-x-3 relative">
+          <p className="text-[10px] lg:text-[11px] font-bold opacity-30 uppercase tracking-[0.3em]">Orchestrating distributed nodes</p>
           <div 
-            className="pointer-events-auto cursor-help relative"
+            className="pointer-events-auto cursor-help relative flex items-center"
             onMouseEnter={() => setIsInfoHovered(true)}
             onMouseLeave={() => setIsInfoHovered(false)}
           >
-            <Info className="w-5 h-5 opacity-10 group-hover/title:opacity-30 transition-opacity" />
+            <Info className="w-3.5 h-3.5 opacity-10 group-hover/title:opacity-30 transition-opacity" />
             <AnimatePresence>
-              {isInfoHovered && <Tooltip text="Visualizing active transmission paths and node integrity." />}
+              {isInfoHovered && <Tooltip text="Visualizing active transmission paths." />}
             </AnimatePresence>
           </div>
         </div>
       </div>
 
-
       <motion.div 
         initial={{ opacity: 0, scale: 0.998 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex-1 min-h-0 glass rounded-[60px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative border-border"
+        className="flex-1 min-h-0 glass rounded-[32px] overflow-hidden shadow-2xl relative border-border"
       >
         <ReactFlow
           nodes={nodes}
@@ -161,20 +160,20 @@ export default function Dashboard() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{ padding: 0.2 }}
           minZoom={0.1}
           maxZoom={4}
         >
-          <Background gap={40} size={1} color="var(--border)" />
+          <Background gap={35} size={1} color="var(--border)" />
           <Controls 
             showInteractive={false} 
-            className="!m-12 scale-125" 
+            className="!m-6" 
           />
           <MiniMap 
-            style={{ height: 160, width: 240 }}
+            style={{ height: 100, width: 140 }}
             nodeColor="var(--primary)"
             maskColor="var(--background)"
-            className="!bg-card/80 !border-border !rounded-[45px] hidden lg:block !m-12 shadow-2xl backdrop-blur-3xl"
+            className="!bg-card/60 !border-border !rounded-3xl hidden lg:block !m-6 shadow-xl backdrop-blur-2xl"
           />
         </ReactFlow>
       </motion.div>

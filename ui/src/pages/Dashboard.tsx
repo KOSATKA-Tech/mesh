@@ -102,7 +102,7 @@ export default function Dashboard() {
 
   if (isLoading) return (
     <div className="flex h-[60vh] items-center justify-center">
-       <div className="text-[12px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Synchronizing Fleet...</div>
+       <div className="text-[13px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Synchronizing Fleet...</div>
     </div>
   );
 
@@ -116,7 +116,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)] w-full relative space-y-12">
+    <div className="flex flex-col h-[calc(100vh-14rem)] lg:h-[calc(100vh-16rem)] w-full relative space-y-12">
       <div className="flex-none space-y-2 lg:space-y-4 pointer-events-none group/title">
         <h1 className="text-5xl lg:text-8xl font-black tracking-tighter uppercase italic opacity-95 group-hover/title:opacity-100 transition-all duration-700">Network Map</h1>
         <div className="flex items-center space-x-4">
@@ -126,9 +126,9 @@ export default function Dashboard() {
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, scale: 0.995 }}
+        initial={{ opacity: 0, scale: 0.998 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex-1 min-h-0 glass rounded-[60px] overflow-hidden shadow-2xl relative border-border"
+        className="flex-1 min-h-0 glass rounded-[60px] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.5)] relative border-border"
       >
         <ReactFlow
           nodes={nodes}
@@ -138,21 +138,20 @@ export default function Dashboard() {
           onConnect={onConnect}
           nodeTypes={nodeTypes}
           fitView
-          fitViewOptions={{ padding: 0.4 }}
-          minZoom={0.2}
-          maxZoom={2}
-          translateExtent={[[-500, -500], [2000, 2000]]}
+          fitViewOptions={{ padding: 0.3 }}
+          minZoom={0.1}
+          maxZoom={4}
         >
           <Background gap={40} size={1} color="var(--border)" />
           <Controls 
             showInteractive={false} 
-            className="!m-8" 
+            className="!m-12 scale-125" 
           />
           <MiniMap 
-            style={{ height: 140, width: 200 }}
+            style={{ height: 160, width: 240 }}
             nodeColor="var(--primary)"
             maskColor="var(--background)"
-            className="!bg-card !border-border !rounded-[40px] hidden lg:block !m-8 shadow-2xl"
+            className="!bg-card/80 !border-border !rounded-[45px] hidden lg:block !m-12 shadow-2xl backdrop-blur-3xl"
           />
         </ReactFlow>
       </motion.div>

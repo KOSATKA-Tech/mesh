@@ -4,46 +4,30 @@ WORKDIR /ui
 
 # Copy dependency files first for caching
 COPY ui/package*.json ./
-# Use cache mount for npm
+# Use cache mount for npm and skip optional/audit for max speed
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm install --no-audit --no-fund
 
 # Copy source and build
 COPY ui/ ./
-RUN npx vite build
+RUN npm run build
 
-# --- STAGE 2: Build Python Dependencies ---
-FROM python:3.11-slim AS py-builder
+# --- STAGE 2: Build the Master API ---
+FROM python:3.11-slim
 
 # Copy uv binary from official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Install build dependencies (these will be discarded in the final image)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# IMPORTANT: Copy the UI build FIRST. 
+# This forces Docker BuildKit to serialize the stages!
+# It will NOT start apt-get or Python installation until the UI is 100% built.
+# This prevents SWAP thrashing and OOM crashes on small 1vCPU / 1GB VPS servers.
+RUN mkdir -p /app/master/kosatka_master/static/admin
+COPY --from=ui-builder /ui/dist /app/master/kosatka_master/static/admin
 
-# Copy full workspace structure required by uv sync
-COPY pyproject.toml uv.lock /app/
-COPY master /app/master
-COPY agent /app/agent
-COPY sdk /app/sdk
-COPY cli /app/cli
-COPY ansible /app/ansible
-
-# Install Python dependencies into /app/.venv
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --link-mode=copy
-
-# --- STAGE 3: Final Production Image ---
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install ONLY Caddy and minimal runtime dependencies
+# Install ONLY Caddy and minimal runtime dependencies (NO build-essential)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     debian-keyring \
     debian-archive-keyring \
@@ -58,9 +42,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoremove -y \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Copy the pre-built Python environment from Stage 2
-COPY --from=py-builder /app/.venv /app/.venv
-
 # Copy application code
 COPY pyproject.toml uv.lock /app/
 COPY master /app/master
@@ -69,9 +50,9 @@ COPY sdk /app/sdk
 COPY cli /app/cli
 COPY ansible /app/ansible
 
-# Copy the UI build from Stage 1
-RUN mkdir -p /app/master/kosatka_master/static/admin
-COPY --from=ui-builder /ui/dist /app/master/kosatka_master/static/admin
+# Install Python dependencies (uv uses pre-compiled wheels, no compilation needed)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --link-mode=copy
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app/master

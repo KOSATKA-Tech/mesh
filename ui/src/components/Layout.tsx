@@ -176,7 +176,7 @@ export default function Layout() {
           <div className="absolute top-[-20%] left-[-10%] w-[140%] h-[140%] bg-[radial-gradient(circle_at_center,_var(--accent)_0%,_transparent_60%)] pointer-events-none -z-10 opacity-30" />
           
           <div className={clsx(
-             "h-full w-full p-4 lg:p-8 relative transition-all duration-500",
+             "h-full w-full p-4 lg:p-8 relative transition-all duration-500 overflow-y-auto",
              isSidebarOpen ? "scale-100" : "scale-[1.002]"
           )}>
              <Outlet />

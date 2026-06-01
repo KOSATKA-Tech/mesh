@@ -40,7 +40,6 @@ ansible/group_vars
 *.jpeg
 docs/
 assets/
-README.md
 Makefile
 .env*
 ! .env.master.example

@@ -51,7 +51,9 @@ COPY cli /app/cli
 COPY ansible /app/ansible
 
 # Install Python dependencies (uv uses pre-compiled wheels, no compilation needed)
+# Added UV_HTTP_TIMEOUT and UV_RETRIES to handle flaky network on some VPS providers
 RUN --mount=type=cache,target=/root/.cache/uv \
+    UV_HTTP_TIMEOUT=300 UV_RETRIES=10 \
     uv sync --frozen --no-dev --link-mode=copy
 
 ENV PATH="/app/.venv/bin:$PATH"

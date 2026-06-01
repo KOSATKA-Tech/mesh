@@ -15,15 +15,18 @@ def start_https_proxy(domain: str, port: int):
         return
 
     caddyfile_content = f"""
-{domain} {{
-    # Basic DDoS / DoS Protection (Connection / Request timeouts)
-    timeouts {{
-        read_body 10s
-        read_header 5s
-        write 10s
-        idle 30s
+{{
+    servers {{
+        timeouts {{
+            read_body 10s
+            read_header 5s
+            write 10s
+            idle 30s
+        }}
     }}
+}}
 
+{domain} {{
     # Protect Admin UI from public access
     # Only allow API and Subscription endpoints
     @disallowed path /admin* /

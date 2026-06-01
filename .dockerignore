@@ -1,0 +1,47 @@
+# Docker ignore file for KOSATKA Mesh
+
+# Git
+.git
+.github
+
+# Python
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.venv
+.pytest_cache
+.coverage
+.bandit
+.flake8
+.ruff_cache
+kosatka.db
+test.db
+
+# Node
+**/node_modules
+**/dist
+**/.lighthouseci
+npm-debug.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+data/
+ansible/inventory
+ansible/group_vars
+!ansible/roles
+!ansible/site.yml
+!ansible/deploy.sh
+*.png
+*.jpg
+*.jpeg
+docs/
+assets/
+README.md
+Makefile
+.env*
+! .env.master.example
+! .env.agent.example

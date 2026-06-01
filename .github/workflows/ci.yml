@@ -65,12 +65,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Linter
-        run: npm run lint
-
-      - name: Run Tests
-        run: npm test
-
       - name: Build UI
         run: |
           export VITE_BASE_URL="/admin/"

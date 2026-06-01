@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...database import get_db
 from ...models.routing import ClientRoutingProfile, GeositeEntry, RoutingPolicy
-from ...security import get_api_key, validate_operator
+from ...security import validate_operator
 from ...services import geosite_importer
 
 router = APIRouter(prefix="", tags=["routing"], dependencies=[Depends(validate_operator)])

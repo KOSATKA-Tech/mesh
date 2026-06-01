@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from kosatka_master.config import settings
 from kosatka_master.database import get_db
 from kosatka_master.models.node import Node
-from kosatka_master.security import get_api_key, validate_operator
+from kosatka_master.security import validate_operator
 from kosatka_master.services.providers.agent_provider import AgentNodeProvider
 from pydantic import BaseModel
 from sqlalchemy import select

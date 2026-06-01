@@ -40,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: master/Dockerfile
+      args:
+        - UV_INDEX_URL
     depends_on:
       postgres:
         condition: service_healthy

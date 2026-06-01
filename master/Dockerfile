@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.npm \
 
 # Copy source and build
 COPY ui/ ./
-RUN npm run build
+RUN npx vite build
 
 # --- STAGE 2: Build the Master API ---
 FROM python:3.11-slim

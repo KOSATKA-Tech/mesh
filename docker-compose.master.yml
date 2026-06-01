@@ -49,8 +49,8 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/app/data
-      - caddy_data:/data
-      - caddy_config:/config
+      - caddy_data:/root/.local/share/caddy
+      - caddy_config:/root/.config/caddy
     # ``env_file`` populates the container's environment from
     # .env.master if present. Operator-supplied values (KOSATKA_API_KEY,
     # KOSATKA_WEBHOOK_SECRET, etc.) come from there — see

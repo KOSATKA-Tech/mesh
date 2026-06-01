@@ -3,6 +3,7 @@ import ReactFlow, {
   Background, 
   Controls, 
   MiniMap, 
+  ControlButton,
   applyNodeChanges, 
   applyEdgeChanges, 
   addEdge,
@@ -118,7 +119,7 @@ export default function Dashboard() {
   const toggleFullscreen = () => {
     if (!mapRef.current) return;
     if (!document.fullscreenElement) {
-      mapRef.current.requestFullscreen();
+      mapRef.current.requestFullscreen().catch(err => console.error(err));
       setIsFullscreen(true);
     } else {
       document.exitFullscreen();
@@ -181,20 +182,14 @@ export default function Dashboard() {
           <Background gap={30} size={1} color="var(--border)" />
           <Controls 
             showInteractive={false} 
-            className="!m-4" 
-          />
+            className="!m-4"
+          >
+            {/* Unified Fullscreen Button in the same Control block */}
+            <ControlButton onClick={toggleFullscreen} title="Toggle Fullscreen">
+               {isFullscreen ? <Minimize /> : <Maximize />}
+            </ControlButton>
+          </Controls>
           
-          {/* Internal Fullscreen Toggle */}
-          <div className="absolute top-4 right-4 z-50">
-            <button 
-              onClick={toggleFullscreen}
-              className="p-3 bg-card/80 border border-border rounded-xl text-foreground/40 hover:text-foreground hover:bg-accent transition-all shadow-xl backdrop-blur-xl"
-              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-            >
-              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            </button>
-          </div>
-
           <MiniMap 
             style={{ height: 80, width: 120 }}
             nodeColor="var(--primary)"

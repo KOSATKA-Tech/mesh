@@ -59,90 +59,90 @@ export default function Settings() {
 
   if (isLoading && Object.keys(localConfig).length === 0) return (
     <div className="flex h-full items-center justify-center">
-       <div className="text-[10px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Accessing Core Config...</div>
+       <div className="text-[11px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Accessing Core Config...</div>
     </div>
   );
 
   return (
-    <div className="space-y-12 pb-32 w-full">
+    <div className="space-y-10 pb-32 w-full max-w-[1400px] mx-auto transition-all duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div className="space-y-2 text-left">
-          <h1 className="text-5xl lg:text-7xl font-black tracking-tighter uppercase italic opacity-95 text-foreground transition-all">Settings</h1>
-          <p className="text-[12px] lg:text-[14px] font-bold opacity-40 uppercase tracking-[0.4em]">Global Mesh Configuration & Security Parameters</p>
+        <div className="space-y-1 text-left">
+          <h1 className="text-4xl lg:text-6xl font-black tracking-tighter uppercase italic opacity-95 text-foreground transition-all">Settings</h1>
+          <p className="text-[11px] lg:text-[12px] font-bold opacity-40 uppercase tracking-[0.4em]">Global Mesh Configuration & Security Parameters</p>
         </div>
         <button 
           onClick={handleSave}
           disabled={updateBatch.isPending}
-          className="hidden sm:flex items-center space-x-4 bg-primary text-primary-foreground px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-[12px] hover:opacity-90 transition-all shadow-2xl active:scale-95"
+          className="hidden sm:flex items-center space-x-3 bg-primary text-primary-foreground px-8 py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] hover:opacity-90 transition-all shadow-xl active:scale-95"
         >
-          {updateBatch.isPending ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+          {updateBatch.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           <span>{updateBatch.isPending ? 'Syncing...' : 'Apply Changes'}</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* SMTP Section */}
         <motion.div 
           onMouseEnter={() => setHoveredSection('smtp')}
           onMouseLeave={() => setHoveredSection(null)}
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="glass p-10 rounded-[40px] space-y-8 relative group hover:border-border transition-colors shadow-lg"
+          className="glass p-8 rounded-[32px] space-y-6 relative group hover:border-border transition-colors shadow-lg"
         >
           <AnimatePresence>
             {hoveredSection === 'smtp' && <Tooltip text="Outgoing email settings." />}
           </AnimatePresence>
           
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 opacity-40">
-              <Mail className="h-5 w-5" />
-              <h2 className="font-black uppercase tracking-[0.2em] text-[12px] italic">SMTP Communications</h2>
+            <div className="flex items-center space-x-3 opacity-40">
+              <Mail className="h-4 w-4" />
+              <h2 className="font-black uppercase tracking-[0.2em] text-[11px] italic">SMTP Communications</h2>
             </div>
-            <Info className="h-4 w-4 opacity-10 group-hover:opacity-30 transition-opacity" />
+            <Info className="h-3.5 w-3.5 text-white/10 group-hover:text-white/30 transition-opacity" />
           </div>
 
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Relay Host</label>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Relay Host</label>
               <input 
-                className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
+                className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
                 value={localConfig.smtp_host || ''} 
                 onChange={e => updateKey('smtp_host', e.target.value)}
                 placeholder="smtp.example.com"
               />
             </div>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-1 space-y-2">
-                <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Port</label>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-1 space-y-1.5">
+                <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Port</label>
                 <input 
                   type="number"
-                  className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
+                  className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
                   value={localConfig.smtp_port || 587} 
                   onChange={e => updateKey('smtp_port', parseInt(e.target.value))}
                 />
               </div>
-              <div className="col-span-2 space-y-2">
-                <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Sender Entity</label>
+              <div className="col-span-2 space-y-1.5">
+                <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Sender Entity</label>
                 <input 
-                  className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
+                  className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
                   value={localConfig.smtp_from || ''} 
                   onChange={e => updateKey('smtp_from', e.target.value)}
                   placeholder="noreply@kosatka.tech"
                 />
               </div>
             </div>
-            <div className="space-y-2 text-left">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 block">Credentials</label>
-              <div className="space-y-3">
+            <div className="space-y-1.5 text-left">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 block">Credentials</label>
+              <div className="space-y-2">
                 <input 
-                  className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
+                  className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
                   value={localConfig.smtp_user || ''} 
                   onChange={e => updateKey('smtp_user', e.target.value)}
                   placeholder="Username"
                 />
                 <input 
                   type="password"
-                  className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
+                  className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all opacity-80 text-foreground" 
                   value={localConfig.smtp_password || ''} 
                   onChange={e => updateKey('smtp_password', e.target.value)}
                   placeholder="••••••••"
@@ -160,36 +160,36 @@ export default function Settings() {
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.1 }} 
           className={clsx(
-            "glass p-10 rounded-[40px] relative group hover:border-border transition-all duration-700 shadow-xl self-start",
-            !isDnsProviderSelected ? "pb-12" : "pb-10"
+            "glass p-8 rounded-[32px] relative group hover:border-border transition-all duration-700 shadow-xl self-start",
+            !isDnsProviderSelected ? "pb-10" : "pb-8"
           )}
         >
           <AnimatePresence>
             {hoveredSection === 'dns' && <Tooltip text="Automates node domain records." />}
           </AnimatePresence>
 
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4 opacity-40">
-              <Globe className="h-5 w-5" />
-              <h2 className="font-black uppercase tracking-[0.2em] text-[12px] italic">DNS Orchestration</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3 opacity-40">
+              <Globe className="h-4.5 w-4.5" />
+              <h2 className="font-black uppercase tracking-[0.2em] text-[11px] italic">DNS Orchestration</h2>
             </div>
-            <Info className="h-4 w-4 opacity-10 group-hover:opacity-30 transition-opacity" />
+            <Info className="h-3.5 w-3.5 text-white/10 group-hover:text-white/30 transition-opacity" />
           </div>
 
-          <div className="space-y-6">
-             <div className="space-y-2">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Root Domain</label>
+          <div className="space-y-4">
+             <div className="space-y-1.5">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Root Domain</label>
               <input 
-                className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
+                className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 transition-all italic opacity-80 text-foreground" 
                 value={localConfig.base_domain || ''} 
                 onChange={e => updateKey('base_domain', e.target.value)}
                 placeholder="nodes.kosatka.tech"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Provider API</label>
+            <div className="space-y-1.5">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 text-left block">Provider API</label>
               <select 
-                className="w-full bg-foreground/[0.03] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/40 appearance-none cursor-pointer uppercase font-black tracking-widest opacity-80 text-foreground"
+                className="w-full bg-foreground/[0.02] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/40 appearance-none cursor-pointer uppercase font-black tracking-widest opacity-80 text-foreground"
                 value={localConfig.dns_provider || 'manual'}
                 onChange={e => updateKey('dns_provider', e.target.value)}
               >
@@ -208,12 +208,12 @@ export default function Settings() {
                   initial={{ opacity: 0, height: 0 }} 
                   animate={{ opacity: 1, height: 'auto' }} 
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2 pt-6 border-t border-border overflow-hidden text-left"
+                  className="space-y-1.5 pt-4 border-t border-border overflow-hidden text-left"
                 >
-                  <label className="text-[10px] opacity-30 uppercase font-black tracking-widest ml-1 block">Authentication Token</label>
+                  <label className="text-[9px] opacity-30 uppercase font-black tracking-widest ml-1 block">Authentication Token</label>
                   <input 
                     type="password" 
-                    className="w-full bg-foreground/[0.05] border border-border rounded-xl px-5 py-4 text-base outline-none focus:border-primary/50 transition-all opacity-80 text-foreground" 
+                    className="w-full bg-foreground/[0.03] border border-border rounded-lg px-4 py-3 text-sm outline-none focus:border-primary/50 transition-all opacity-80 text-foreground" 
                     value={localConfig[`${localConfig.dns_provider === 'beget' ? 'beget_api_key' : localConfig.dns_provider + '_token'}`] || ''} 
                     onChange={e => updateKey(localConfig.dns_provider === 'beget' ? 'beget_api_key' : localConfig.dns_provider + '_token', e.target.value)} 
                   />
@@ -230,7 +230,7 @@ export default function Settings() {
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ delay: 0.2 }} 
-          className="glass p-10 rounded-[40px] space-y-10 lg:col-span-2 relative group hover:border-border transition-colors shadow-2xl"
+          className="glass p-10 rounded-[40px] space-y-8 lg:col-span-2 relative group hover:border-border transition-colors shadow-2xl"
         >
           <AnimatePresence>
             {hoveredSection === 'security' && <Tooltip text="Global limits and protection." />}
@@ -239,46 +239,45 @@ export default function Settings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4 opacity-40">
               <Shield className="h-5 w-5" />
-              <h2 className="font-black uppercase tracking-[0.2em] text-[12px] italic">Hardening & Integrity</h2>
+              <h2 className="font-black uppercase tracking-[0.2em] text-[11px] italic">Hardening & Integrity</h2>
             </div>
             <Info className="h-4 w-4 opacity-10 group-hover:opacity-30 transition-opacity" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div className="bg-foreground/[0.02] border border-border p-8 rounded-[35px] space-y-4">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest block text-left">API Rate Limit</label>
-              <div className="flex items-end space-x-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-foreground/[0.01] border border-border p-6 rounded-[24px] space-y-3">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest block text-left">API Rate Limit</label>
+              <div className="flex items-end space-x-2">
                 <input 
                   type="number"
-                  className="bg-transparent border-b-2 border-border text-3xl outline-none w-24 font-black focus:border-primary/40 transition-all text-foreground" 
+                  className="bg-transparent border-b-2 border-border text-2xl outline-none w-20 font-black focus:border-primary/40 transition-all text-foreground" 
                   value={localConfig.global_rate_limit || 60} 
                   onChange={e => updateKey('global_rate_limit', parseInt(e.target.value))}
                 />
-                <span className="text-[11px] opacity-20 font-black uppercase mb-1">req/min</span>
+                <span className="text-[10px] opacity-20 font-black uppercase mb-1">req/min</span>
               </div>
             </div>
 
-            <div className="bg-foreground/[0.02] border border-border p-8 rounded-[35px] space-y-4 flex flex-col justify-center">
-              <div className="flex items-center space-x-5">
-                <div className="relative inline-flex h-8 w-14 items-center rounded-full bg-foreground/[0.1] border border-border cursor-pointer transition-colors" onClick={() => updateKey('ddos_protection_enabled', !localConfig.ddos_protection_enabled)}>
-                  {/* Toggle Background Colors */}
+            <div className="bg-foreground/[0.01] border border-border p-6 rounded-[24px] space-y-3 flex flex-col justify-center">
+              <div className="flex items-center space-x-4">
+                <div className="relative inline-flex h-7 w-12 items-center rounded-full bg-foreground/[0.05] border border-border cursor-pointer transition-colors" onClick={() => updateKey('ddos_protection_enabled', !localConfig.ddos_protection_enabled)}>
                   <div className={clsx(
                     "absolute inset-0 rounded-full transition-colors duration-500",
                     localConfig.ddos_protection_enabled ? "bg-green-500/20" : "bg-red-500/10"
                   )} />
                   <span className={clsx(
-                    "inline-block h-6 w-6 transform rounded-full transition-transform duration-500 shadow-lg relative z-10",
-                    localConfig.ddos_protection_enabled ? "translate-x-7 bg-green-500" : "translate-x-1 bg-red-500/40"
+                    "inline-block h-5 w-5 transform rounded-full transition-transform duration-500 shadow-lg relative z-10",
+                    localConfig.ddos_protection_enabled ? "translate-x-6 bg-green-500" : "translate-x-1 bg-red-500/40"
                   )} />
                 </div>
-                <span className="text-[11px] opacity-40 uppercase font-black tracking-widest text-left">DDoS Mitigation</span>
+                <span className="text-[10px] opacity-40 uppercase font-black tracking-widest text-left">DDoS Mitigation</span>
               </div>
             </div>
 
-            <div className="bg-foreground/[0.02] border border-border p-8 rounded-[35px] space-y-4 text-left">
-              <label className="text-[10px] opacity-30 uppercase font-black tracking-widest block">Bot Username</label>
+            <div className="bg-foreground/[0.01] border border-border p-6 rounded-[24px] space-y-3 text-left">
+              <label className="text-[9px] opacity-30 uppercase font-black tracking-widest block">Bot Username</label>
               <input 
-                className="w-full bg-transparent border-b-2 border-border text-xl outline-none focus:border-primary/40 transition-all italic opacity-90 font-bold text-foreground" 
+                className="w-full bg-transparent border-b-2 border-border text-lg outline-none focus:border-primary/40 transition-all italic opacity-90 font-bold text-foreground" 
                 value={localConfig.bot_username || ''} 
                 onChange={e => updateKey('bot_username', e.target.value)}
                 placeholder="KosatkaVPNBot"
@@ -292,9 +291,9 @@ export default function Settings() {
         <button 
           onClick={handleSave}
           disabled={updateBatch.isPending}
-          className="flex items-center justify-center bg-primary text-primary-foreground h-20 w-20 rounded-[30px] shadow-2xl active:scale-90 transition-all"
+          className="flex items-center justify-center bg-primary text-primary-foreground h-16 w-16 rounded-[20px] shadow-2xl active:scale-90 transition-all"
         >
-          {updateBatch.isPending ? <RefreshCw className="h-8 w-8 animate-spin" /> : <Save className="h-8 w-8" />}
+          {updateBatch.isPending ? <RefreshCw className="h-6 w-6 animate-spin" /> : <Save className="h-6 w-6" />}
         </button>
       </div>
     </div>

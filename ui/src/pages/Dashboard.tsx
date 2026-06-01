@@ -178,6 +178,9 @@ export default function Dashboard() {
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.05}
           maxZoom={4}
+          preventScrolling={false}
+          panOnDrag={true}
+          zoomOnScroll={true}
         >
           <Background gap={30} size={1} color="var(--border)" />
           <Controls 

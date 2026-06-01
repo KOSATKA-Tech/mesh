@@ -31,10 +31,10 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-primary/20 antialiased transition-colors duration-500">
+    <div className="flex h-screen bg-background text-foreground font-sans selection:bg-primary/20 antialiased transition-colors duration-500 overflow-y-auto">
       
       {/* Mobile Top Bar */}
-      <div className="lg:hidden absolute top-0 left-0 right-0 h-14 border-b border-border bg-background/50 backdrop-blur-xl flex items-center justify-between px-4 z-50">
+      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 border-b border-border bg-background/50 backdrop-blur-xl flex items-center justify-between px-4 z-50">
         <div className="flex items-center space-x-2">
           <img src="/admin/logo-main.png" alt="Kosatka" className={clsx("h-6 w-auto mix-blend-screen brightness-200", theme === 'light' && "invert brightness-0")} />
           <span className="font-bold tracking-[0.2em] uppercase italic text-[9px] opacity-40">Kosatka</span>

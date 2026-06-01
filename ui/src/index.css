@@ -51,7 +51,6 @@
     -webkit-font-smoothing: antialiased;
     font-size: 13px; /* Further scaled down */
     transition: background-color 0.4s ease, color 0.4s ease;
-    overflow: hidden;
   }
 
   /* CUSTOM SELECT STYLING */

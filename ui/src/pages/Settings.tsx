@@ -10,10 +10,10 @@ const Tooltip = ({ text }: { text: string }) => (
     initial={{ opacity: 0, y: 5, scale: 0.98 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
     exit={{ opacity: 0, y: 3, scale: 0.98 }}
-    className="absolute z-50 px-5 py-3 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-xl shadow-2xl pointer-events-none -top-14 left-0 whitespace-nowrap"
+    className="absolute z-50 px-4 py-2 bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-lg shadow-2xl pointer-events-none -top-10 left-0 whitespace-nowrap"
   >
     {text}
-    <div className="absolute -bottom-1 left-4 w-3 h-3 bg-primary rotate-45" />
+    <div className="absolute -bottom-1 left-4 w-2 h-2 bg-primary rotate-45" />
   </motion.div>
 );
 
@@ -58,13 +58,13 @@ export default function Settings() {
   const isDnsProviderSelected = ['cloudflare', 'digitalocean', 'hetzner', 'beget'].includes(localConfig.dns_provider);
 
   if (isLoading && Object.keys(localConfig).length === 0) return (
-    <div className="flex h-[60vh] items-center justify-center">
-       <div className="text-[13px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Accessing Core Config...</div>
+    <div className="flex h-full items-center justify-center">
+       <div className="text-[10px] font-black uppercase tracking-luxury animate-pulse opacity-20 italic">Accessing Core Config...</div>
     </div>
   );
 
   return (
-    <div className="space-y-12 max-w-5xl pb-32">
+    <div className="space-y-12 pb-32 w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-2 text-left">
           <h1 className="text-5xl lg:text-7xl font-black tracking-tighter uppercase italic opacity-95 text-foreground transition-all">Settings</h1>
@@ -260,8 +260,16 @@ export default function Settings() {
 
             <div className="bg-foreground/[0.02] border border-border p-8 rounded-[35px] space-y-4 flex flex-col justify-center">
               <div className="flex items-center space-x-5">
-                <div className="relative inline-flex h-8 w-14 items-center rounded-full bg-foreground/[0.05] border border-border cursor-pointer transition-colors" onClick={() => updateKey('ddos_protection_enabled', !localConfig.ddos_protection_enabled)}>
-                  <span className={clsx("inline-block h-6 w-6 transform rounded-full bg-primary transition-transform duration-500 shadow-lg", localConfig.ddos_protection_enabled ? "translate-x-7" : "translate-x-1")} />
+                <div className="relative inline-flex h-8 w-14 items-center rounded-full bg-foreground/[0.1] border border-border cursor-pointer transition-colors" onClick={() => updateKey('ddos_protection_enabled', !localConfig.ddos_protection_enabled)}>
+                  {/* Toggle Background Colors */}
+                  <div className={clsx(
+                    "absolute inset-0 rounded-full transition-colors duration-500",
+                    localConfig.ddos_protection_enabled ? "bg-green-500/20" : "bg-red-500/10"
+                  )} />
+                  <span className={clsx(
+                    "inline-block h-6 w-6 transform rounded-full transition-transform duration-500 shadow-lg relative z-10",
+                    localConfig.ddos_protection_enabled ? "translate-x-7 bg-green-500" : "translate-x-1 bg-red-500/40"
+                  )} />
                 </div>
                 <span className="text-[11px] opacity-40 uppercase font-black tracking-widest text-left">DDoS Mitigation</span>
               </div>

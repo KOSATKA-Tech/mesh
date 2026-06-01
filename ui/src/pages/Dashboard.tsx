@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import ReactFlow, { 
   Background, 
   Controls, 
@@ -17,7 +17,7 @@ import 'reactflow/dist/style.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Info } from 'lucide-react';
+import { Info, Maximize, Minimize } from 'lucide-react';
 import { NodeComponent } from '../components/NodeComponent';
 
 const Tooltip = ({ text }: { text: string }) => (
@@ -38,9 +38,11 @@ const nodeTypes = {
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
+  const mapRef = useRef<HTMLDivElement>(null);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [isInfoHovered, setIsInfoHovered] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { data: meshData, isLoading, error } = useQuery({
     queryKey: ['mesh-topology'],
@@ -113,6 +115,17 @@ export default function Dashboard() {
     [updateUpstream]
   );
 
+  const toggleFullscreen = () => {
+    if (!mapRef.current) return;
+    if (!document.fullscreenElement) {
+      mapRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   if (isLoading) return (
     <div className="flex h-full items-center justify-center">
        <div className="text-[10px] font-black uppercase tracking-luxury animate-pulse opacity-10 italic">Synchronizing Fleet...</div>
@@ -148,9 +161,10 @@ export default function Dashboard() {
       </div>
 
       <motion.div 
+        ref={mapRef}
         initial={{ opacity: 0, scale: 0.998 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex-1 min-h-0 glass rounded-3xl overflow-hidden shadow-2xl relative border-border"
+        className="flex-1 min-h-0 glass rounded-3xl overflow-hidden shadow-2xl relative border-border bg-background"
       >
         <ReactFlow
           nodes={nodes}
@@ -169,6 +183,18 @@ export default function Dashboard() {
             showInteractive={false} 
             className="!m-4" 
           />
+          
+          {/* Internal Fullscreen Toggle */}
+          <div className="absolute top-4 right-4 z-50">
+            <button 
+              onClick={toggleFullscreen}
+              className="p-3 bg-card/80 border border-border rounded-xl text-foreground/40 hover:text-foreground hover:bg-accent transition-all shadow-xl backdrop-blur-xl"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
+          </div>
+
           <MiniMap 
             style={{ height: 80, width: 120 }}
             nodeColor="var(--primary)"
